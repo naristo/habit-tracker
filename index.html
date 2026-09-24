@@ -4,21 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ultimate Habit Tracker v3.0 | Executive Dashboard</title>
+  
   <script charset="UTF-8" type="text/javascript">
-window["adrum-start-time"] = new Date().getTime();
-(function(config){
-    config.appKey = "SY-AAC-PJY";
-    config.adrumExtUrlHttp = "http://cdn.appdynamics.com";
-    config.adrumExtUrlHttps = "https://cdn.appdynamics.com";
-    config.beaconUrlHttp = "http://syd-col.eum-appdynamics.com";
-    config.beaconUrlHttps = "https://syd-col.eum-appdynamics.com";
-    config.useHTTPSAlways = true;
-    config.resTiming = {"bufSize":200,"clearResTimingOnBeaconSend":true};
-    config.maxUrlLength = 512;
-    config.enableCoreWebVitals = true;
-})(window["adrum-config"] || (window["adrum-config"] = {}));
-</script>
-<script src="//cdn.appdynamics.com/adrum/adrum-26.1.0.4742.js"></script>
+    window["adrum-start-time"] = new Date().getTime();
+    (function(config){
+        config.appKey = "SY-AAC-PJY";
+        config.adrumExtUrlHttp = "http://cdn.appdynamics.com";
+        config.adrumExtUrlHttps = "https://cdn.appdynamics.com";
+        config.beaconUrlHttp = "http://syd-col.eum-appdynamics.com";
+        config.beaconUrlHttps = "https://syd-col.eum-appdynamics.com";
+        config.useHTTPSAlways = true;
+        config.resTiming = {"bufSize":200,"clearResTimingOnBeaconSend":true};
+        config.maxUrlLength = 512;
+        config.enableCoreWebVitals = true;
+    })(window["adrum-config"] || (window["adrum-config"] = {}));
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -307,16 +308,16 @@ window["adrum-start-time"] = new Date().getTime();
                 <th class="p-3 sticky left-[130px] z-20 bg-slate-950 min-w-[180px] border-r border-slate-800">Habit Name</th>
                 <th class="p-3 text-center min-w-[70px] border-r border-slate-800">Target</th>
                 
-                <th colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
+                <th id="week-1-header" colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
                   Week 1 (Days 1 - 7)
                 </th>
-                <th colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
+                <th id="week-2-header" colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
                   Week 2 (Days 8 - 14)
                 </th>
-                <th colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
+                <th id="week-3-header" colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
                   Week 3 (Days 15 - 21)
                 </th>
-                <th colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
+                <th id="week-4-header" colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
                   Week 4 (Days 22 - 28)
                 </th>
 
@@ -825,19 +826,36 @@ window["adrum-start-time"] = new Date().getTime();
       const tbody = document.getElementById('grid-tbody');
       const dayHeadersRow = document.getElementById('day-headers-row');
       
+      const now = new Date();
+      const currentMonthShort = now.toLocaleDateString('en-US', { month: 'short' });
+      const currentDay = now.getDate();
+
+      // Dynamically update week headers with current month and date ranges
+      const w1 = document.getElementById('week-1-header');
+      const w2 = document.getElementById('week-2-header');
+      const w3 = document.getElementById('week-3-header');
+      const w4 = document.getElementById('week-4-header');
+      if (w1) w1.innerText = `Week 1 (${currentMonthShort} 1 - 7)`;
+      if (w2) w2.innerText = `Week 2 (${currentMonthShort} 8 - 14)`;
+      if (w3) w3.innerText = `Week 3 (${currentMonthShort} 15 - 21)`;
+      if (w4) w4.innerText = `Week 4 (${currentMonthShort} 22 - 28)`;
+
       let dayHeadersHTML = `
         <th class="p-2 sticky left-0 z-10 bg-slate-900 border-r border-slate-800"></th>
         <th class="p-2 sticky left-[130px] z-10 bg-slate-900 border-r border-slate-800"></th>
         <th class="p-2 border-r border-slate-800"></th>
       `;
-      const daysOfWeek = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
       for (let d = 1; d <= 28; d++) {
-        const dayLabel = daysOfWeek[(d - 1) % 7];
-        const isWeekend = (dayLabel === 'S');
+        const dateObj = new Date(now.getFullYear(), now.getMonth(), d);
+        const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'narrow' });
+        const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+        const isToday = (currentDay === d);
+
         dayHeadersHTML += `
-          <th class="p-1 text-center border-r border-slate-800 ${isWeekend ? 'bg-slate-800/40 text-slate-300' : ''}">
-            <div class="text-[9px] text-slate-500">${dayLabel}</div>
-            <div>${d}</div>
+          <th class="p-1 text-center border-r border-slate-800 transition-all ${isToday ? 'bg-indigo-600 text-white font-bold ring-2 ring-indigo-400 rounded-t-md shadow-lg shadow-indigo-500/30' : isWeekend ? 'bg-slate-800/40 text-slate-300' : ''}">
+            <div class="text-[9px] ${isToday ? 'text-indigo-100 font-extrabold uppercase tracking-wider' : 'text-slate-500'}">${isToday ? 'TODAY' : dayLabel}</div>
+            <div class="${isToday ? 'text-xs font-black' : ''}">${d}</div>
           </th>
         `;
       }
@@ -881,11 +899,15 @@ window["adrum-start-time"] = new Date().getTime();
 
         let daysCells = '';
         habit.checks.forEach((checked, idx) => {
-          const isWeekend = (idx % 7 === 5 || idx % 7 === 6);
+          const dayNum = idx + 1;
+          const dateObj = new Date(now.getFullYear(), now.getMonth(), dayNum);
+          const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+          const isToday = (currentDay === dayNum);
+
           daysCells += `
-            <td class="p-1 text-center border-r border-slate-800 ${isWeekend ? 'bg-slate-950/40' : ''}">
+            <td class="p-1 text-center border-r border-slate-800 ${isToday ? 'bg-indigo-950/60 ring-1 ring-indigo-500/40' : isWeekend ? 'bg-slate-950/40' : ''}">
               <input type="checkbox" 
-                     class="custom-checkbox" 
+                     class="custom-checkbox ${isToday ? 'ring-2 ring-indigo-400' : ''}" 
                      ${checked ? 'checked' : ''} 
                      onchange="window.toggleCheck(${habit.id}, ${idx})">
             </td>
@@ -934,6 +956,8 @@ window["adrum-start-time"] = new Date().getTime();
       while (statusRow.children.length > 3) statusRow.removeChild(statusRow.lastChild);
 
       const totalHabitsCount = habits.length || 1;
+      const now = new Date();
+      const currentDay = now.getDate();
 
       for (let day = 0; day < 28; day++) {
         let dayDone = 0;
@@ -942,19 +966,20 @@ window["adrum-start-time"] = new Date().getTime();
         });
 
         const dayRate = habits.length > 0 ? ((dayDone / totalHabitsCount) * 100).toFixed(0) : 0;
+        const isToday = (currentDay === (day + 1));
 
         const tdCount = document.createElement('td');
-        tdCount.className = "p-1 text-center font-bold text-indigo-300 border-r border-slate-800";
+        tdCount.className = `p-1 text-center font-bold text-indigo-300 border-r border-slate-800 ${isToday ? 'bg-indigo-950/60' : ''}`;
         tdCount.innerText = dayDone;
         countRow.appendChild(tdCount);
 
         const tdRate = document.createElement('td');
-        tdRate.className = "p-1 text-center text-[11px] text-slate-300 border-r border-slate-800";
+        tdRate.className = `p-1 text-center text-[11px] text-slate-300 border-r border-slate-800 ${isToday ? 'bg-indigo-950/60 font-bold' : ''}`;
         tdRate.innerText = `${dayRate}%`;
         rateRow.appendChild(tdRate);
 
         const tdStatus = document.createElement('td');
-        tdStatus.className = "p-1 text-center border-r border-slate-800";
+        tdStatus.className = `p-1 text-center border-r border-slate-800 ${isToday ? 'bg-indigo-950/60' : ''}`;
         if (dayRate >= 80) {
           tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" title="≥80% High"></span>`;
         } else if (dayRate >= 50) {
