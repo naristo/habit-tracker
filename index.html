@@ -96,7 +96,7 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            ULTIMATE HABIT TRACKER <span id="cloud-sync-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Vercel Global Config</span>
+            ULTIMATE HABIT TRACKER <span id="cloud-sync-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Vercel Blob Active</span>
           </h1>
           <p class="text-xs text-slate-400">Production Ready • Executive Analytics • Cloud State Persistence</p>
         </div>
@@ -370,6 +370,40 @@
     <div id="tab-settings" class="tab-content hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
+        <!-- Vercel Blob Storage Integration Card -->
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="cloud" class="w-4 h-4 text-amber-400"></i> Vercel Blob Persistent Storage
+              </h2>
+              <p class="text-xs text-slate-400">Persistent JSON object store across devices</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Vercel Blob Token (`BLOB_READ_WRITE_TOKEN`)</label>
+              <div class="flex gap-2">
+                <input type="password" id="blob-token-input" placeholder="vercel_blob_rw_..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono">
+                <button onclick="saveBlobTokenFromUI()" class="px-3.5 py-2 text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition shadow-md shadow-amber-500/20">Save Token</button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">Found in Vercel Dashboard → Storage → Blob → Settings → Environment Variables.</p>
+            </div>
+
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-300 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Storage Engine:</span>
+                <span id="blob-status-indicator" class="font-bold text-amber-400">Checking Blob Connection...</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Target Object File:</span>
+                <span class="font-mono text-slate-200">habits.json</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Data Export & Import Card -->
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
           <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
@@ -509,14 +543,35 @@
     let vercelBlobToken = null;
 
     async function initCloudSync() {
-      // 1. Check for Vercel Global Config / Edge Config / Blob Environment Variables
+      // 1. Check for Vercel Blob token (from window config, env, or localStorage)
       const vercelConfigRaw = typeof window.__VERCEL_CONFIG__ !== 'undefined' ? window.__VERCEL_CONFIG__ 
         : typeof window.VERCEL_CONFIG !== 'undefined' ? window.VERCEL_CONFIG 
         : typeof window.ENV !== 'undefined' ? window.ENV : {};
 
+      const blobToken = vercelConfigRaw?.BLOB_READ_WRITE_TOKEN 
+        || (typeof BLOB_READ_WRITE_TOKEN !== 'undefined' ? BLOB_READ_WRITE_TOKEN : null)
+        || localStorage.getItem('vercel_blob_token');
+
+      if (blobToken) {
+        vercelBlobToken = blobToken;
+        const inputEl = document.getElementById('blob-token-input');
+        if (inputEl) inputEl.value = blobToken;
+
+        updateBadgeUI("Vercel Blob Active", "amber");
+        const blobIndicator = document.getElementById('blob-status-indicator');
+        if (blobIndicator) blobIndicator.innerText = "Connected to Vercel Blob";
+
+        const loaded = await loadFromVercelBlob();
+        if (loaded) {
+          renderGrid();
+          renderDashboard();
+          return;
+        }
+      }
+
+      // 2. Fallback to Vercel Global Config
       const edgeConfigUrl = vercelConfigRaw?.EDGE_CONFIG || vercelConfigRaw?.GLOBAL_CONFIG_URL || (typeof EDGE_CONFIG !== 'undefined' ? EDGE_CONFIG : null);
       const globalConfigToken = vercelConfigRaw?.GLOBAL_CONFIG_TOKEN || vercelConfigRaw?.KV_REST_API_TOKEN || null;
-      const blobToken = vercelConfigRaw?.BLOB_READ_WRITE_TOKEN || (typeof BLOB_READ_WRITE_TOKEN !== 'undefined' ? BLOB_READ_WRITE_TOKEN : null);
 
       if (edgeConfigUrl || globalConfigToken) {
         vercelGlobalConfig = { url: edgeConfigUrl, token: globalConfigToken };
@@ -527,18 +582,9 @@
           renderDashboard();
           return;
         }
-      } else if (blobToken) {
-        vercelBlobToken = blobToken;
-        updateBadgeUI("Vercel Blob Active", "emerald");
-        const loaded = await loadFromVercelBlob();
-        if (loaded) {
-          renderGrid();
-          renderDashboard();
-          return;
-        }
       }
 
-      // 2. Fallback to Firebase Cloud Sync if present
+      // 3. Fallback to Firebase Cloud Sync if present
       const appId = typeof __app_id !== 'undefined' ? __app_id : 'habit-tracker-global-config';
       const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
 
@@ -567,12 +613,94 @@
         }
       }
 
-      // 3. Fallback to local storage
+      // 4. Fallback to Local Storage
       updateBadgeUI("Local Storage Active", "indigo");
+      const blobIndicator = document.getElementById('blob-status-indicator');
+      if (blobIndicator) blobIndicator.innerText = "Local Storage (Token Not Configured)";
       loadHabitsFromStorage();
       renderGrid();
       renderDashboard();
     }
+
+    async function loadFromVercelBlob() {
+      const token = vercelBlobToken || localStorage.getItem('vercel_blob_token');
+      const blobUrl = localStorage.getItem('vercel_blob_url');
+
+      try {
+        if (blobUrl) {
+          const res = await fetch(`${blobUrl}?cacheBust=${Date.now()}`);
+          if (res.ok) {
+            const parsed = await res.json();
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              habits = parsed;
+              return true;
+            }
+          }
+        }
+
+        if (token) {
+          const response = await fetch(`https://blob.vercel-storage.com/habits.json`, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'x-api-version': '7'
+            }
+          });
+          if (response.ok) {
+            const parsed = await response.json();
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              habits = parsed;
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Error loading from Vercel Blob:", e);
+      }
+      return false;
+    }
+
+    async function saveToVercelBlob() {
+      const token = vercelBlobToken || localStorage.getItem('vercel_blob_token');
+      if (!token) return;
+      try {
+        const response = await fetch(`https://blob.vercel-storage.com/habits.json`, {
+          method: 'PUT',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'x-api-version': '7',
+            'x-content-type': 'application/json',
+            'x-add-random-suffix': 'false'
+          },
+          body: JSON.stringify(habits)
+        });
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData && resData.url) {
+            localStorage.setItem('vercel_blob_url', resData.url);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to save to Vercel Blob:", e);
+      }
+    }
+
+    window.saveBlobTokenFromUI = function() {
+      const token = document.getElementById('blob-token-input').value.trim();
+      if (!token) {
+        localStorage.removeItem('vercel_blob_token');
+        localStorage.removeItem('vercel_blob_url');
+        vercelBlobToken = null;
+        window.showToast("Vercel Blob token cleared", "rose");
+        initCloudSync();
+        return;
+      }
+
+      localStorage.setItem('vercel_blob_token', token);
+      vercelBlobToken = token;
+      saveToVercelBlob();
+      initCloudSync();
+      window.showToast("Vercel Blob token saved & synced!");
+    };
 
     async function loadFromGlobalConfig() {
       if (!vercelGlobalConfig || !vercelGlobalConfig.url) return false;
@@ -606,42 +734,6 @@
         });
       } catch (e) {
         console.error("Failed to save to Vercel Global Config:", e);
-      }
-    }
-
-    async function loadFromVercelBlob() {
-      if (!vercelBlobToken) return false;
-      try {
-        const response = await fetch(`https://blob.vercel-storage.com/habits.json`, {
-          headers: { Authorization: `Bearer ${vercelBlobToken}` }
-        });
-        if (response.ok) {
-          const parsed = await response.json();
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            habits = parsed;
-            return true;
-          }
-        }
-      } catch (e) {
-        console.warn("Error loading from Vercel Blob:", e);
-      }
-      return false;
-    }
-
-    async function saveToVercelBlob() {
-      if (!vercelBlobToken) return;
-      try {
-        await fetch(`https://blob.vercel-storage.com/habits.json`, {
-          method: 'PUT',
-          headers: { 
-            Authorization: `Bearer ${vercelBlobToken}`,
-            'Content-Type': 'application/json',
-            'x-api-version': '1'
-          },
-          body: JSON.stringify(habits)
-        });
-      } catch (e) {
-        console.error("Failed to save to Vercel Blob:", e);
       }
     }
 
@@ -683,6 +775,8 @@
       badge.innerText = text;
       if (color === 'emerald') {
         badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      } else if (color === 'amber') {
+        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20";
       } else {
         badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
       }
