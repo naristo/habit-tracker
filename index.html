@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate Habit Tracker v3.0 | Executive Dashboard</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#0F172A',
+              card: '#1E293B',
+              border: '#334155',
+              accent: '#4F46E5',
+              accentHover: '#4338CA',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .custom-checkbox {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid #475569;
+      border-radius: 4px;
+      background-color: #0f172a;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease-in-out;
+    }
+    .custom-checkbox:checked {
+      background-color: #4F46E5;
+      border-color: #6366F1;
+    }
+    .custom-checkbox:checked::after {
+      content: '✓';
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .custom-checkbox:hover {
+      border-color: #818CF8;
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+          <i data-lucide="activity" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            ULTIMATE HABIT TRACKER <span id="cloud-sync-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Vercel Global Config</span>
+          </h1>
+          <p class="text-xs text-slate-400">Production Ready • Executive Analytics • Cloud State Persistence</p>
+        </div>
+      </div>
+
+      <nav class="flex space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-indigo-600 transition-all">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          Dashboard
+        </button>
+        <button onclick="switchTab('tracker')" id="tab-btn-tracker" class="tab-btn flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+          4-Week Grid
+        </button>
+        <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="sliders" class="w-4 h-4"></i>
+          Data & Settings
+        </button>
+      </nav>
+
+      <div class="flex items-center space-x-2">
+        <button onclick="openAddHabitModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-indigo-500/30">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Habit
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ==================== TAB 1: EXECUTIVE DASHBOARD ==================== -->
+    <div id="tab-dashboard" class="tab-content space-y-6">
+      
+      <!-- Top KPI Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Active Habits</span>
+            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <i data-lucide="check-square" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-3xl font-extrabold text-white" id="kpi-total-habits">0</span>
+            <span class="text-xs text-emerald-400 font-medium flex items-center gap-0.5">
+              <i data-lucide="shield-check" class="w-3 h-3"></i> Active
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Configured in habit table</p>
+        </div>
+
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Monthly Completion</span>
+            <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <i data-lucide="percent" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-3xl font-extrabold text-white" id="kpi-completion-rate">0.0%</span>
+            <span class="text-xs text-emerald-400 font-medium flex items-center gap-0.5" id="kpi-completion-badge">
+              <i data-lucide="trending-up" class="w-3 h-3"></i> Monthly Target
+            </span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div id="kpi-completion-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">High Goal Days</span>
+            <div class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+              <i data-lucide="flame" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-3xl font-extrabold text-amber-400" id="kpi-current-streak">0 Days</span>
+            <span class="text-xs text-amber-400/80 font-medium">≥ 80% Completed</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Total high performance days</p>
+        </div>
+
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 shadow-sm hover:border-slate-700 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Top Category</span>
+            <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+              <i data-lucide="award" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <span class="text-2xl font-extrabold text-white truncate max-w-[140px]" id="kpi-top-category">N/A</span>
+            <span class="text-xs font-bold text-purple-400" id="kpi-top-category-pct">0%</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Highest consistency rate</p>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Category Matrix -->
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-400"></i> Category Matrix
+            </h2>
+            <span class="text-xs text-slate-400 font-mono">LIVE SPAN</span>
+          </div>
+
+          <div class="space-y-4" id="category-breakdown-container">
+            <!-- Dynamic elements loaded via JS -->
+          </div>
+        </div>
+
+        <!-- 4-Week Trend Map -->
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4 lg:col-span-2">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-indigo-400"></i> Weekly Trend & Performance Map
+              </h2>
+              <p class="text-xs text-slate-400">4-Week Completion Comparison (Week 1 through Week 4)</p>
+            </div>
+            <div class="flex items-center space-x-2 text-xs">
+              <span class="inline-flex items-center gap-1 text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Actual Rate</span>
+              <span class="inline-flex items-center gap-1 text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span> 80% Benchmark</span>
+            </div>
+          </div>
+
+          <div class="h-64 relative">
+            <canvas id="weeklyTrendChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="thumbs-up" class="w-4 h-4"></i> Top Performing Habits
+            </h3>
+            <span class="text-xs text-slate-500">Highest Rate</span>
+          </div>
+          <div class="divide-y divide-slate-800" id="top-performers-container">
+            <!-- Loaded via JS -->
+          </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i> Needing Focus & Consistency
+            </h3>
+            <span class="text-xs text-slate-500">Lowest Rate</span>
+          </div>
+          <div class="divide-y divide-slate-800" id="bottom-performers-container">
+            <!-- Loaded via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 2: 4-WEEK HABIT TRACKER ==================== -->
+    <div id="tab-tracker" class="tab-content hidden space-y-6">
+      
+      <!-- Filter Bar -->
+      <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="filter" class="w-4 h-4 text-slate-400"></i>
+            <span class="text-xs font-semibold text-slate-300">Category Filter:</span>
+          </div>
+          <select id="category-filter" onchange="renderGrid()" class="bg-slate-950 border border-slate-700 text-xs rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">All Categories</option>
+            <option value="🏃 Exercise">🏃 Exercise</option>
+            <option value="🧹 Chores">🧹 Chores</option>
+            <option value="📚 Study">📚 Study</option>
+            <option value="🧘 Pray / Meditation">🧘 Pray / Meditation</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-4 text-xs text-slate-400">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-emerald-500/20 border border-emerald-500"></span> ≥80% High
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-amber-500/20 border border-amber-500"></span> 50-79% Medium
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded bg-rose-500/20 border border-rose-500"></span> &lt;50% Low
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN 28-DAY GRID TABLE -->
+      <div class="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[1200px]" id="habit-grid-table">
+            <thead>
+              <!-- TOP HEADER ROW: WEEKS -->
+              <tr class="bg-slate-950/80 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <th class="p-3 sticky left-0 z-20 bg-slate-950 min-w-[130px] border-r border-slate-800">Category</th>
+                <th class="p-3 sticky left-[130px] z-20 bg-slate-950 min-w-[180px] border-r border-slate-800">Habit Name</th>
+                <th class="p-3 text-center min-w-[70px] border-r border-slate-800">Target</th>
+                
+                <th colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
+                  Week 1 (Days 1 - 7)
+                </th>
+                <th colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
+                  Week 2 (Days 8 - 14)
+                </th>
+                <th colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
+                  Week 3 (Days 15 - 21)
+                </th>
+                <th colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
+                  Week 4 (Days 22 - 28)
+                </th>
+
+                <th class="p-3 text-center min-w-[70px] border-r border-slate-800">Total</th>
+                <th class="p-3 text-center min-w-[80px] border-r border-slate-800">% Rate</th>
+                <th class="p-3 min-w-[100px] border-r border-slate-800">Sparkline</th>
+                <th class="p-3 text-center min-w-[50px]">Actions</th>
+              </tr>
+
+              <!-- SECOND HEADER ROW: DAY NUMBERS -->
+              <tr class="bg-slate-900 text-[10px] text-slate-400 font-mono border-b border-slate-800" id="day-headers-row">
+                <!-- Injected via JS -->
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-800/60 text-xs text-slate-200" id="grid-tbody">
+              <!-- Interactive habit rows injected via JS -->
+            </tbody>
+
+            <!-- DAILY ROLLUP FOOTER ROWS -->
+            <tfoot class="bg-slate-950 border-t-2 border-slate-700 font-mono text-xs">
+              <tr id="rollup-count-row" class="hover:bg-slate-900/50">
+                <td colspan="2" class="p-2.5 font-sans font-bold text-slate-300 sticky left-0 z-10 bg-slate-950 border-r border-slate-800 text-right">
+                  Daily Completed Count (=COUNTIF)
+                </td>
+                <td class="p-2 text-center text-slate-500 border-r border-slate-800" id="rollup-target-sum">-</td>
+              </tr>
+
+              <tr id="rollup-rate-row" class="hover:bg-slate-900/50">
+                <td colspan="2" class="p-2.5 font-sans font-bold text-slate-300 sticky left-0 z-10 bg-slate-950 border-r border-slate-800 text-right">
+                  Daily Completion Rate (%)
+                </td>
+                <td class="p-2 text-center text-slate-500 border-r border-slate-800">-</td>
+              </tr>
+
+              <tr id="rollup-status-row" class="hover:bg-slate-900/50">
+                <td colspan="2" class="p-2.5 font-sans font-bold text-slate-300 sticky left-0 z-10 bg-slate-950 border-r border-slate-800 text-right">
+                  Daily Status Indicator
+                </td>
+                <td class="p-2 text-center text-slate-500 border-r border-slate-800">-</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 3: DATA & SETTINGS ==================== -->
+    <div id="tab-settings" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Data Export & Import Card -->
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4 text-indigo-400"></i> Backup & Data Portability
+              </h2>
+              <p class="text-xs text-slate-400">Export or restore your habit dataset to JSON or CSV</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3 pt-2">
+            <button onclick="exportDataJSON()" class="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4 text-indigo-400"></i> Export Backup (JSON)
+            </button>
+            <button onclick="document.getElementById('import-file-input').click()" class="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-2">
+              <i data-lucide="upload" class="w-4 h-4 text-emerald-400"></i> Import Backup (JSON)
+            </button>
+            <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="importDataJSON(event)">
+            <button onclick="exportCSV()" class="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-2">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-amber-400"></i> Export Report (CSV)
+            </button>
+          </div>
+        </div>
+
+        <!-- System Reset & Diagnostics Card -->
+        <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 text-rose-400">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reset & Factory Defaults
+            </h2>
+            <p class="text-xs text-slate-400">Manage local storage state or clear dataset</p>
+          </div>
+
+          <p class="text-xs text-slate-400">
+            Your data is continuously saved in your browser's local storage. You can restore default sample habits or wipe all habits to start fresh.
+          </p>
+
+          <div class="flex flex-wrap gap-3">
+            <button onclick="confirmResetData()" class="px-3.5 py-2 text-xs font-semibold bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 rounded-lg border border-amber-500/30 transition flex items-center gap-2">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset to Sample Data
+            </button>
+            <button onclick="confirmClearAllData()" class="px-3.5 py-2 text-xs font-semibold bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 rounded-lg border border-rose-500/30 transition flex items-center gap-2">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> Clear All Data (Blank Slate)
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3 text-rose-400">
+        <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-base font-bold text-white" id="confirm-modal-title">Confirm Action</h3>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed" id="confirm-modal-message">Are you sure you want to proceed?</p>
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+        <button id="confirm-modal-cancel" class="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white transition">Cancel</button>
+        <button id="confirm-modal-action" class="px-4 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white rounded-lg transition shadow-md shadow-rose-500/20">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <div id="add-habit-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i> Add New Habit
+        </h3>
+        <button onclick="closeAddHabitModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleAddHabitSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Habit Name</label>
+          <input type="text" id="modal-habit-name" required placeholder="e.g. Read 20 pages / Water 2L" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Category</label>
+          <select id="modal-habit-category" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+            <option value="🏃 Exercise">🏃 Exercise</option>
+            <option value="🧹 Chores">🧹 Chores</option>
+            <option value="📚 Study">📚 Study</option>
+            <option value="🧘 Pray / Meditation">🧘 Pray / Meditation</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Weekly Target Frequency (Days / Week)</label>
+          <input type="number" id="modal-habit-target" min="1" max="7" value="5" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+          <button type="button" onclick="closeAddHabitModal()" class="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white transition">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-md shadow-indigo-500/20">Save Habit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const defaultHabits = [
+      { id: 1, category: "🏃 Exercise", name: "Morning 5k Run / Cardio", target: 5, checks: [true, true, true, false, true, true, false,  true, true, true, true, false, true, false,  true, true, true, true, true, false, false,  true, true, true, false, true, true, true] },
+      { id: 2, category: "🏃 Exercise", name: "Strength Training Routine", target: 4, checks: [true, false, true, false, true, false, true,  true, false, true, false, true, false, true,  true, false, true, false, true, false, true,  true, false, true, false, true, false, true] },
+      { id: 3, category: "🧹 Chores", name: "Kitchen Deep Clean", target: 7, checks: [true, true, true, true, true, true, true,  true, true, true, true, true, true, true,  true, true, true, true, true, true, true,  true, true, true, true, true, true, true] },
+      { id: 4, category: "🧹 Chores", name: "Laundry & Organization", target: 3, checks: [false, true, false, true, false, true, false,  false, true, false, true, false, true, false,  false, true, false, true, false, true, false,  false, true, false, true, false, true, false] },
+      { id: 5, category: "📚 Study", name: "System Architecture Reading", target: 6, checks: [true, true, true, true, true, true, false,  true, true, true, true, true, true, false,  true, true, true, true, true, true, false,  true, true, true, true, true, true, true] },
+      { id: 6, category: "📚 Study", name: "Algorithmic Practice", target: 5, checks: [true, true, true, true, true, false, false,  true, true, true, true, true, false, false,  true, true, true, true, true, false, false,  true, true, true, true, true, false, true] },
+      { id: 7, category: "🧘 Pray / Meditation", name: "Daily Prayer & Mindfulness", target: 7, checks: [true, true, true, true, true, true, true,  true, true, true, true, true, true, true,  true, true, true, true, true, true, true,  true, true, true, true, true, true, true] },
+      { id: 8, category: "🧘 Pray / Meditation", name: "Evening Journal & Review", target: 7, checks: [true, true, true, false, true, true, true,  true, true, true, true, true, true, true,  true, true, true, true, true, true, true,  true, true, true, true, true, true, true] }
+    ];
+
+    let habits = [];
+    let trendChartInstance = null;
+    let confirmCallback = null;
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let vercelGlobalConfig = null;
+    let vercelBlobToken = null;
+
+    async function initCloudSync() {
+      // 1. Check for Vercel Global Config / Edge Config / Blob Environment Variables
+      const vercelConfigRaw = typeof window.__VERCEL_CONFIG__ !== 'undefined' ? window.__VERCEL_CONFIG__ 
+        : typeof window.VERCEL_CONFIG !== 'undefined' ? window.VERCEL_CONFIG 
+        : typeof window.ENV !== 'undefined' ? window.ENV : {};
+
+      const edgeConfigUrl = vercelConfigRaw?.EDGE_CONFIG || vercelConfigRaw?.GLOBAL_CONFIG_URL || (typeof EDGE_CONFIG !== 'undefined' ? EDGE_CONFIG : null);
+      const globalConfigToken = vercelConfigRaw?.GLOBAL_CONFIG_TOKEN || vercelConfigRaw?.KV_REST_API_TOKEN || null;
+      const blobToken = vercelConfigRaw?.BLOB_READ_WRITE_TOKEN || (typeof BLOB_READ_WRITE_TOKEN !== 'undefined' ? BLOB_READ_WRITE_TOKEN : null);
+
+      if (edgeConfigUrl || globalConfigToken) {
+        vercelGlobalConfig = { url: edgeConfigUrl, token: globalConfigToken };
+        updateBadgeUI("Vercel Global Config", "emerald");
+        const loaded = await loadFromGlobalConfig();
+        if (loaded) {
+          renderGrid();
+          renderDashboard();
+          return;
+        }
+      } else if (blobToken) {
+        vercelBlobToken = blobToken;
+        updateBadgeUI("Vercel Blob Active", "emerald");
+        const loaded = await loadFromVercelBlob();
+        if (loaded) {
+          renderGrid();
+          renderDashboard();
+          return;
+        }
+      }
+
+      // 2. Fallback to Firebase Cloud Sync if present
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'habit-tracker-global-config';
+      const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+
+      if (rawConfig) {
+        try {
+          const firebaseConfig = JSON.parse(rawConfig);
+          const app = initializeApp(firebaseConfig);
+          db = getFirestore(app);
+          auth = getAuth(app);
+
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            const cred = await signInWithCustomToken(auth, __initial_auth_token);
+            currentUser = cred.user;
+          } else {
+            const cred = await signInAnonymously(auth);
+            currentUser = cred.user;
+          }
+
+          if (currentUser) {
+            updateBadgeUI("Cloud Connected", "emerald");
+            setupRealtimeCloudListener(appId, currentUser.uid);
+            return;
+          }
+        } catch (e) {
+          console.warn("Cloud connection error, falling back to local storage:", e);
+        }
+      }
+
+      // 3. Fallback to local storage
+      updateBadgeUI("Local Storage Active", "indigo");
+      loadHabitsFromStorage();
+      renderGrid();
+      renderDashboard();
+    }
+
+    async function loadFromGlobalConfig() {
+      if (!vercelGlobalConfig || !vercelGlobalConfig.url) return false;
+      try {
+        const response = await fetch(`${vercelGlobalConfig.url}/items/habits`, {
+          headers: vercelGlobalConfig.token ? { Authorization: `Bearer ${vercelGlobalConfig.token}` } : {}
+        });
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData && Array.isArray(resData)) {
+            habits = resData;
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Error loading from Vercel Global Config:", e);
+      }
+      return false;
+    }
+
+    async function saveToGlobalConfig() {
+      if (!vercelGlobalConfig || !vercelGlobalConfig.url || !vercelGlobalConfig.token) return;
+      try {
+        await fetch(`${vercelGlobalConfig.url}/items`, {
+          method: 'PATCH',
+          headers: { 
+            Authorization: `Bearer ${vercelGlobalConfig.token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ items: [{ operation: 'upsert', key: 'habits', value: habits }] })
+        });
+      } catch (e) {
+        console.error("Failed to save to Vercel Global Config:", e);
+      }
+    }
+
+    async function loadFromVercelBlob() {
+      if (!vercelBlobToken) return false;
+      try {
+        const response = await fetch(`https://blob.vercel-storage.com/habits.json`, {
+          headers: { Authorization: `Bearer ${vercelBlobToken}` }
+        });
+        if (response.ok) {
+          const parsed = await response.json();
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            habits = parsed;
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Error loading from Vercel Blob:", e);
+      }
+      return false;
+    }
+
+    async function saveToVercelBlob() {
+      if (!vercelBlobToken) return;
+      try {
+        await fetch(`https://blob.vercel-storage.com/habits.json`, {
+          method: 'PUT',
+          headers: { 
+            Authorization: `Bearer ${vercelBlobToken}`,
+            'Content-Type': 'application/json',
+            'x-api-version': '1'
+          },
+          body: JSON.stringify(habits)
+        });
+      } catch (e) {
+        console.error("Failed to save to Vercel Blob:", e);
+      }
+    }
+
+    function setupRealtimeCloudListener(appId, userId) {
+      if (!db || !userId) return;
+      const habitsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'habits', 'main');
+
+      onSnapshot(habitsDocRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().items) {
+          habits = docSnap.data().items;
+        } else {
+          loadHabitsFromStorage();
+          saveHabitsToCloud();
+        }
+        renderGrid();
+        renderDashboard();
+      }, (error) => {
+        console.error("Firestore error:", error);
+        loadHabitsFromStorage();
+        renderGrid();
+        renderDashboard();
+      });
+    }
+
+    async function saveHabitsToCloud() {
+      if (!db || !currentUser) return;
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'ultimate-habit-tracker';
+      const habitsDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'habits', 'main');
+      try {
+        await setDoc(habitsDocRef, { items: habits, lastUpdated: new Date().toISOString() });
+      } catch (err) {
+        console.error("Failed to sync to cloud:", err);
+      }
+    }
+
+    function updateBadgeUI(text, color) {
+      const badge = document.getElementById('cloud-sync-badge');
+      if (!badge) return;
+      badge.innerText = text;
+      if (color === 'emerald') {
+        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      } else {
+        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+      }
+    }
+
+    function loadHabitsFromStorage() {
+      const saved = localStorage.getItem('ultimate_habit_tracker_data');
+      if (saved) {
+        try {
+          habits = JSON.parse(saved);
+        } catch(e) {
+          habits = JSON.parse(JSON.stringify(defaultHabits));
+        }
+      } else {
+        habits = JSON.parse(JSON.stringify(defaultHabits));
+      }
+    }
+
+    function saveHabitsToStorage() {
+      localStorage.setItem('ultimate_habit_tracker_data', JSON.stringify(habits));
+      if (vercelGlobalConfig) {
+        saveToGlobalConfig();
+      }
+      if (vercelBlobToken) {
+        saveToVercelBlob();
+      }
+      if (db && currentUser) {
+        saveHabitsToCloud();
+      }
+    }
+
+    window.showToast = function(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bgColor = type === 'rose' ? 'bg-rose-900/90 border-rose-700 text-rose-200' : 'bg-slate-900 border-indigo-500/50 text-slate-100';
+      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl border ${bgColor} text-xs shadow-xl transition-all duration-300 transform translate-y-2 opacity-0`;
+      toast.innerHTML = `<i data-lucide="${type === 'rose' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 text-indigo-400"></i> ${message}`;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    };
+
+    window.showConfirmModal = function(title, message, onConfirm) {
+      document.getElementById('confirm-modal-title').innerText = title;
+      document.getElementById('confirm-modal-message').innerText = message;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+      confirmCallback = onConfirm;
+    };
+
+    document.getElementById('confirm-modal-cancel').addEventListener('click', () => {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    });
+
+    document.getElementById('confirm-modal-action').addEventListener('click', () => {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      if (confirmCallback) confirmCallback();
+      confirmCallback = null;
+    });
+
+    window.confirmResetData = function() {
+      window.showConfirmModal(
+        "Reset to Sample Habits?",
+        "This will restore the 8 default executive sample habits and overwrite your current setup across device sync.",
+        () => {
+          habits = JSON.parse(JSON.stringify(defaultHabits));
+          saveHabitsToStorage();
+          renderGrid();
+          renderDashboard();
+          window.showToast("Dataset reset to sample habits!");
+        }
+      );
+    };
+
+    window.confirmClearAllData = function() {
+      window.showConfirmModal(
+        "Clear All Habit Data?",
+        "Are you sure you want to erase ALL habits? This action will leave a blank grid across all synced devices.",
+        () => {
+          habits = [];
+          saveHabitsToStorage();
+          renderGrid();
+          renderDashboard();
+          window.showToast("All habit data cleared!", "rose");
+        }
+      );
+    };
+
+    window.deleteHabit = function(habitId) {
+      window.showConfirmModal(
+        "Delete Habit?",
+        "Are you sure you want to permanently delete this habit?",
+        () => {
+          habits = habits.filter(h => h.id !== habitId);
+          saveHabitsToStorage();
+          renderGrid();
+          renderDashboard();
+          window.showToast("Habit deleted");
+        }
+      );
+    };
+
+    window.switchTab = function(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-indigo-600', 'text-white');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'dashboard') {
+        renderDashboard();
+      }
+    };
+
+    window.toggleCheck = function(habitId, dayIdx) {
+      const habit = habits.find(h => h.id === habitId);
+      if (habit) {
+        habit.checks[dayIdx] = !habit.checks[dayIdx];
+        saveHabitsToStorage();
+        renderGrid();
+      }
+    };
+
+    window.renderGrid = function() {
+      const categoryFilter = document.getElementById('category-filter').value;
+      const tbody = document.getElementById('grid-tbody');
+      const dayHeadersRow = document.getElementById('day-headers-row');
+      
+      let dayHeadersHTML = `
+        <th class="p-2 sticky left-0 z-10 bg-slate-900 border-r border-slate-800"></th>
+        <th class="p-2 sticky left-[130px] z-10 bg-slate-900 border-r border-slate-800"></th>
+        <th class="p-2 border-r border-slate-800"></th>
+      `;
+      const daysOfWeek = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+      for (let d = 1; d <= 28; d++) {
+        const dayLabel = daysOfWeek[(d - 1) % 7];
+        const isWeekend = (dayLabel === 'S');
+        dayHeadersHTML += `
+          <th class="p-1 text-center border-r border-slate-800 ${isWeekend ? 'bg-slate-800/40 text-slate-300' : ''}">
+            <div class="text-[9px] text-slate-500">${dayLabel}</div>
+            <div>${d}</div>
+          </th>
+        `;
+      }
+      dayHeadersHTML += `<th class="p-2 border-r border-slate-800"></th><th class="p-2 border-r border-slate-800"></th><th class="p-2 border-r border-slate-800"></th><th class="p-2"></th>`;
+      dayHeadersRow.innerHTML = dayHeadersHTML;
+
+      const filteredHabits = categoryFilter === 'ALL' 
+        ? habits 
+        : habits.filter(h => h.category === categoryFilter);
+
+      tbody.innerHTML = '';
+
+      if (filteredHabits.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="35" class="p-8 text-center text-slate-500">
+              <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+              No habits found. Click "+ Add Habit" above to create your first habit.
+            </td>
+          </tr>
+        `;
+      }
+
+      filteredHabits.forEach(habit => {
+        const completedCount = habit.checks.filter(Boolean).length;
+        const targetMonthly = habit.target * 4;
+        const ratePct = targetMonthly > 0 ? ((completedCount / targetMonthly) * 100).toFixed(1) : "0.0";
+
+        let badgeClass = 'bg-slate-800 text-slate-300';
+        if (habit.category.includes('Exercise')) badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+        else if (habit.category.includes('Chores')) badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+        else if (habit.category.includes('Study')) badgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+        else if (habit.category.includes('Pray')) badgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+
+        let barColorClass = 'bg-emerald-500';
+        if (ratePct < 50) barColorClass = 'bg-rose-500';
+        else if (ratePct < 80) barColorClass = 'bg-amber-500';
+
+        let tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition";
+
+        let daysCells = '';
+        habit.checks.forEach((checked, idx) => {
+          const isWeekend = (idx % 7 === 5 || idx % 7 === 6);
+          daysCells += `
+            <td class="p-1 text-center border-r border-slate-800 ${isWeekend ? 'bg-slate-950/40' : ''}">
+              <input type="checkbox" 
+                     class="custom-checkbox" 
+                     ${checked ? 'checked' : ''} 
+                     onchange="window.toggleCheck(${habit.id}, ${idx})">
+            </td>
+          `;
+        });
+
+        tr.innerHTML = `
+          <td class="p-2.5 font-medium sticky left-0 z-10 bg-slate-900 border-r border-slate-800">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${badgeClass}">${habit.category}</span>
+          </td>
+          <td class="p-2.5 font-medium text-slate-200 sticky left-[130px] z-10 bg-slate-900 border-r border-slate-800 truncate max-w-[180px]" title="${habit.name}">
+            ${habit.name}
+          </td>
+          <td class="p-2 text-center font-mono text-slate-400 border-r border-slate-800">${habit.target}/wk</td>
+          ${daysCells}
+          <td class="p-2 text-center font-mono font-bold text-white border-r border-slate-800">${completedCount}/${targetMonthly}</td>
+          <td class="p-2 text-center font-mono font-bold border-r border-slate-800 ${ratePct >= 80 ? 'text-emerald-400' : ratePct >= 50 ? 'text-amber-400' : 'text-rose-400'}">
+            ${ratePct}%
+          </td>
+          <td class="p-2 border-r border-slate-800">
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden flex">
+              <div class="${barColorClass} h-full rounded-full transition-all" style="width: ${Math.min(ratePct, 100)}%"></div>
+            </div>
+          </td>
+          <td class="p-2 text-center">
+            <button onclick="window.deleteHabit(${habit.id})" class="text-slate-500 hover:text-rose-400 transition" title="Delete habit">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      renderDailyRollups();
+      lucide.createIcons();
+    };
+
+    function renderDailyRollups() {
+      const countRow = document.getElementById('rollup-count-row');
+      const rateRow = document.getElementById('rollup-rate-row');
+      const statusRow = document.getElementById('rollup-status-row');
+
+      while (countRow.children.length > 3) countRow.removeChild(countRow.lastChild);
+      while (rateRow.children.length > 3) rateRow.removeChild(rateRow.lastChild);
+      while (statusRow.children.length > 3) statusRow.removeChild(statusRow.lastChild);
+
+      const totalHabitsCount = habits.length || 1;
+
+      for (let day = 0; day < 28; day++) {
+        let dayDone = 0;
+        habits.forEach(h => {
+          if (h.checks[day]) dayDone++;
+        });
+
+        const dayRate = habits.length > 0 ? ((dayDone / totalHabitsCount) * 100).toFixed(0) : 0;
+
+        const tdCount = document.createElement('td');
+        tdCount.className = "p-1 text-center font-bold text-indigo-300 border-r border-slate-800";
+        tdCount.innerText = dayDone;
+        countRow.appendChild(tdCount);
+
+        const tdRate = document.createElement('td');
+        tdRate.className = "p-1 text-center text-[11px] text-slate-300 border-r border-slate-800";
+        tdRate.innerText = `${dayRate}%`;
+        rateRow.appendChild(tdRate);
+
+        const tdStatus = document.createElement('td');
+        tdStatus.className = "p-1 text-center border-r border-slate-800";
+        if (dayRate >= 80) {
+          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" title="≥80% High"></span>`;
+        } else if (dayRate >= 50) {
+          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" title="50-79% Medium"></span>`;
+        } else {
+          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500" title="<50% Low"></span>`;
+        }
+        statusRow.appendChild(tdStatus);
+      }
+
+      for (let i = 0; i < 4; i++) {
+        countRow.appendChild(document.createElement('td'));
+        rateRow.appendChild(document.createElement('td'));
+        statusRow.appendChild(document.createElement('td'));
+      }
+    }
+
+    window.renderDashboard = function() {
+      let totalPossible = 0;
+      let totalCompleted = 0;
+
+      habits.forEach(h => {
+        const hTarget = h.target * 4;
+        const hDone = h.checks.filter(Boolean).length;
+        totalPossible += hTarget;
+        totalCompleted += hDone;
+      });
+
+      const overallRate = totalPossible > 0 ? ((totalCompleted / totalPossible) * 100).toFixed(1) : "0.0";
+      document.getElementById('kpi-total-habits').innerText = habits.length;
+      document.getElementById('kpi-completion-rate').innerText = `${overallRate}%`;
+      document.getElementById('kpi-completion-bar').style.width = `${overallRate}%`;
+
+      let highDays = 0;
+      for (let day = 0; day < 28; day++) {
+        let dayDone = 0;
+        habits.forEach(h => { if (h.checks[day]) dayDone++; });
+        const rate = habits.length > 0 ? (dayDone / habits.length) : 0;
+        if (rate >= 0.8 && habits.length > 0) highDays++;
+      }
+      document.getElementById('kpi-current-streak').innerText = `${highDays} Days`;
+
+      const categories = [
+        { name: "🏃 Exercise", bg: "bg-emerald-500", text: "text-emerald-400" },
+        { name: "🧹 Chores", bg: "bg-amber-500", text: "text-amber-400" },
+        { name: "📚 Study", bg: "bg-blue-500", text: "text-blue-400" },
+        { name: "🧘 Pray / Meditation", bg: "bg-purple-500", text: "text-purple-400" }
+      ];
+
+      const catContainer = document.getElementById('category-breakdown-container');
+      catContainer.innerHTML = '';
+
+      let topCat = { name: 'N/A', rate: 0 };
+
+      categories.forEach(cat => {
+        const catHabits = habits.filter(h => h.category === cat.name);
+        let cDone = 0;
+        let cTarget = 0;
+
+        catHabits.forEach(ch => {
+          cDone += ch.checks.filter(Boolean).length;
+          cTarget += (ch.target * 4);
+        });
+
+        const cRate = cTarget > 0 ? ((cDone / cTarget) * 100).toFixed(1) : 0;
+        if (parseFloat(cRate) >= topCat.rate && cTarget > 0) {
+          topCat = { name: cat.name, rate: parseFloat(cRate) };
+        }
+
+        catContainer.innerHTML += `
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-slate-200">${cat.name}</span>
+              <span class="font-mono font-bold ${cat.text}">${cRate}% (${cDone}/${cTarget})</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="${cat.bg} h-full rounded-full transition-all" style="width: ${cRate}%"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById('kpi-top-category').innerText = topCat.name;
+      document.getElementById('kpi-top-category-pct').innerText = `${topCat.rate}%`;
+
+      const habitPerformance = habits.map(h => {
+        const done = h.checks.filter(Boolean).length;
+        const target = h.target * 4;
+        const rate = target > 0 ? (done / target) * 100 : 0;
+        return { name: h.name, category: h.category, rate: rate.toFixed(1), done, target };
+      });
+
+      habitPerformance.sort((a, b) => b.rate - a.rate);
+
+      const top3 = habitPerformance.slice(0, 3);
+      const bottom3 = [...habitPerformance].reverse().slice(0, 3);
+
+      const topContainer = document.getElementById('top-performers-container');
+      topContainer.innerHTML = top3.length > 0 ? top3.map(h => `
+        <div class="py-2.5 flex items-center justify-between text-xs">
+          <div>
+            <div class="font-bold text-slate-200">${h.name}</div>
+            <div class="text-[10px] text-slate-500">${h.category}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-mono font-bold text-emerald-400">${h.rate}%</div>
+            <div class="text-[10px] text-slate-500">${h.done}/${h.target} days</div>
+          </div>
+        </div>
+      `).join('') : '<p class="text-xs text-slate-500 py-2">No habits configured.</p>';
+
+      const bottomContainer = document.getElementById('bottom-performers-container');
+      bottomContainer.innerHTML = bottom3.length > 0 ? bottom3.map(h => `
+        <div class="py-2.5 flex items-center justify-between text-xs">
+          <div>
+            <div class="font-bold text-slate-200">${h.name}</div>
+            <div class="text-[10px] text-slate-500">${h.category}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-mono font-bold text-amber-400">${h.rate}%</div>
+            <div class="text-[10px] text-slate-500">${h.done}/${h.target} days</div>
+          </div>
+        </div>
+      `).join('') : '<p class="text-xs text-slate-500 py-2">No habits configured.</p>';
+
+      renderWeeklyChart();
+    };
+
+    function renderWeeklyChart() {
+      const canvas = document.getElementById('weeklyTrendChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const weekRates = [1, 2, 3, 4].map(wNum => {
+        const startDay = (wNum - 1) * 7;
+        const endDay = startDay + 7;
+        let wDone = 0;
+        let wTarget = 0;
+
+        habits.forEach(h => {
+          for (let d = startDay; d < endDay; d++) {
+            if (h.checks[d]) wDone++;
+          }
+          wTarget += h.target;
+        });
+
+        return wTarget > 0 ? ((wDone / wTarget) * 100).toFixed(1) : 0;
+      });
+
+      if (trendChartInstance) {
+        trendChartInstance.destroy();
+      }
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          datasets: [
+            {
+              label: 'Actual Rate (%)',
+              data: weekRates,
+              backgroundColor: '#4F46E5',
+              borderRadius: 6,
+              barThickness: 28,
+            },
+            {
+              label: 'Benchmark (80%)',
+              data: [80, 80, 80, 80],
+              type: 'line',
+              borderColor: '#64748B',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              min: 0,
+              max: 100,
+              grid: { color: '#1E293B' },
+              ticks: { color: '#94A3B8', callback: v => v + '%' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94A3B8' }
+            }
+          }
+        }
+      });
+    }
+
+    window.openAddHabitModal = function() {
+      document.getElementById('add-habit-modal').classList.remove('hidden');
+    };
+
+    window.closeAddHabitModal = function() {
+      document.getElementById('add-habit-modal').classList.add('hidden');
+    };
+
+    window.handleAddHabitSubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('modal-habit-name').value.trim();
+      const category = document.getElementById('modal-habit-category').value;
+      const target = parseInt(document.getElementById('modal-habit-target').value, 10);
+
+      if (!name) return;
+
+      const newHabit = {
+        id: Date.now(),
+        category,
+        name,
+        target,
+        checks: new Array(28).fill(false)
+      };
+
+      habits.push(newHabit);
+      saveHabitsToStorage();
+      window.closeAddHabitModal();
+      document.getElementById('modal-habit-name').value = '';
+      window.renderGrid();
+      window.renderDashboard();
+      window.showToast("New habit added successfully!");
+    };
+
+    window.exportDataJSON = function() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(habits, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "habit_tracker_backup.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      window.showToast("Backup exported to JSON!");
+    };
+
+    window.importDataJSON = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed)) {
+            habits = parsed;
+            saveHabitsToStorage();
+            window.renderGrid();
+            window.renderDashboard();
+            window.showToast("Habit dataset successfully imported!");
+          }
+        } catch(err) {
+          window.showToast("Invalid JSON backup file format", "rose");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    window.exportCSV = function() {
+      let csvContent = "data:text/csv;charset=utf-8,Category,Habit Name,Target/Wk," + Array.from({length: 28}, (_, i) => `Day ${i+1}`).join(",") + ",Total Completed,Completion Rate %\n";
+      habits.forEach(h => {
+        const completed = h.checks.filter(Boolean).length;
+        const rate = ((completed / (h.target * 4)) * 100).toFixed(1);
+        const row = [
+          `"${h.category}"`,
+          `"${h.name}"`,
+          h.target,
+          ...h.checks.map(c => c ? 1 : 0),
+          completed,
+          `"${rate}%"`
+        ].join(",");
+        csvContent += row + "\n";
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "habit_tracker_report.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.showToast("Report exported to CSV!");
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initCloudSync();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
