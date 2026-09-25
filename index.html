@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ultimate Habit Tracker v3.0 | Executive Dashboard</title>
+
+  <!-- Anti-Flicker Theme Script -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('habit_tracker_theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   
   <!-- AppDynamics Monitoring Script -->
   <script charset="UTF-8" type="text/javascript">
@@ -88,9 +101,36 @@
     .custom-checkbox:hover {
       border-color: #818CF8;
     }
+
+    /* Light Theme Overrides */
+    html.light body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+    }
+    html.light header, html.light .bg-slate-900 {
+      background-color: #FFFFFF !important;
+      border-color: #E2E8F0 !important;
+    }
+    html.light .bg-slate-950 {
+      background-color: #F1F5F9 !important;
+      border-color: #CBD5E1 !important;
+    }
+    html.light .text-white {
+      color: #0F172A !important;
+    }
+    html.light .text-slate-400 {
+      color: #64748B !important;
+    }
+    html.light .border-slate-800 {
+      border-color: #E2E8F0 !important;
+    }
+    html.light .custom-checkbox {
+      background-color: #FFFFFF;
+      border-color: #94A3B8;
+    }
   </style>
 </head>
-<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen transition-colors duration-200">
 
   <!-- TOP HEADER -->
   <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
@@ -124,8 +164,15 @@
       </nav>
 
       <div class="flex items-center space-x-2">
+        <button onclick="openManageHabitsModal()" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="settings-2" class="w-4 h-4 text-indigo-400"></i> Manage Habits
+        </button>
         <button onclick="openAddHabitModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-indigo-500/30">
           <i data-lucide="plus" class="w-4 h-4"></i> Add Habit
+        </button>
+        <button onclick="toggleTheme()" id="theme-toggle-btn" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition" title="Toggle Theme">
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
         </button>
       </div>
     </div>
@@ -206,7 +253,6 @@
 
       <!-- MIDDLE ROW: CATEGORY BREAKDOWN & 4-WEEK TREND -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -214,7 +260,6 @@
             </h2>
             <span class="text-xs text-slate-400 font-mono">LIVE SPAN</span>
           </div>
-
           <div class="space-y-4" id="category-breakdown-container">
             <!-- Dynamic elements loaded via JS -->
           </div>
@@ -233,17 +278,14 @@
               <span class="inline-flex items-center gap-1 text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span> 80% Benchmark</span>
             </div>
           </div>
-
           <div class="h-64 relative">
             <canvas id="weeklyTrendChart"></canvas>
           </div>
         </div>
-
       </div>
 
       <!-- BOTTOM ROW: TOP & BOTTOM PERFORMERS -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-3">
           <div class="flex items-center justify-between border-b border-slate-800 pb-2">
             <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
@@ -267,7 +309,6 @@
             <!-- Loaded via JS -->
           </div>
         </div>
-
       </div>
 
     </div>
@@ -275,7 +316,7 @@
     <!-- ==================== TAB 2: 4-WEEK HABIT TRACKER ==================== -->
     <div id="tab-tracker" class="tab-content hidden space-y-6">
       
-      <!-- Filter Bar -->
+      <!-- Filter & Manage Bar -->
       <div class="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center space-x-3">
           <div class="flex items-center space-x-2">
@@ -292,14 +333,13 @@
         </div>
 
         <div class="flex items-center space-x-4 text-xs text-slate-400">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded bg-emerald-500/20 border border-emerald-500"></span> ≥80% High
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded bg-amber-500/20 border border-amber-500"></span> 50-79% Medium
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded bg-rose-500/20 border border-rose-500"></span> &lt;50% Low
+          <button onclick="openManageHabitsModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 rounded-lg hover:bg-indigo-600/30 transition flex items-center gap-1.5">
+            <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Manage List & Bulk Actions
+          </button>
+          <div class="hidden sm:flex items-center gap-3 border-l border-slate-800 pl-4">
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-500/20 border border-emerald-500"></span> ≥80% High</div>
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-500/20 border border-amber-500"></span> 50-79% Medium</div>
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-rose-500/20 border border-rose-500"></span> &lt;50% Low</div>
           </div>
         </div>
       </div>
@@ -314,23 +354,15 @@
                 <th class="p-3 sticky left-[130px] z-20 bg-slate-950 min-w-[180px] border-r border-slate-800">Habit Name</th>
                 <th class="p-3 text-center min-w-[70px] border-r border-slate-800">Target</th>
                 
-                <th id="week-1-header" colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
-                  Week 1
-                </th>
-                <th id="week-2-header" colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
-                  Week 2
-                </th>
-                <th id="week-3-header" colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">
-                  Week 3
-                </th>
-                <th id="week-4-header" colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">
-                  Week 4
-                </th>
+                <th id="week-1-header" colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">Week 1</th>
+                <th id="week-2-header" colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">Week 2</th>
+                <th id="week-3-header" colspan="7" class="text-center py-2 bg-indigo-950/30 text-indigo-300 border-r border-slate-800">Week 3</th>
+                <th id="week-4-header" colspan="7" class="text-center py-2 bg-slate-900/50 text-slate-300 border-r border-slate-800">Week 4</th>
 
                 <th class="p-3 text-center min-w-[70px] border-r border-slate-800">Total</th>
                 <th class="p-3 text-center min-w-[80px] border-r border-slate-800">% Rate</th>
                 <th class="p-3 min-w-[100px] border-r border-slate-800">Sparkline</th>
-                <th class="p-3 text-center min-w-[50px]">Actions</th>
+                <th class="p-3 text-center min-w-[50px]">Action</th>
               </tr>
 
               <tr class="bg-slate-900 text-[10px] text-slate-400 font-mono border-b border-slate-800" id="day-headers-row">
@@ -379,7 +411,7 @@
           <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
             <div>
               <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <i data-lucide="cloud" class="w-4 h-4 text-emerald-400"></i> Firebase Cloud Sync
+                <i data-lucide="cloud" class="w-4 h-4 text-emerald-400"></i> Firebase Cloud Sync Diagnostics
               </h2>
               <p class="text-xs text-slate-400">Real-time cross-device cloud persistence</p>
             </div>
@@ -389,15 +421,15 @@
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">Firebase Configuration JSON</label>
               <textarea id="firebase-config-input" rows="4" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "..."}' class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"></textarea>
-              <div class="mt-2 flex justify-end">
+              <div class="mt-2 flex justify-end gap-2">
                 <button onclick="saveFirebaseConfigFromUI()" class="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-md shadow-emerald-500/20">Connect Firebase</button>
               </div>
             </div>
 
-            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-300 space-y-1.5">
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-300 space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-slate-400">Sync Engine:</span>
-                <span id="firebase-status-indicator" class="font-bold text-emerald-400">Checking Firebase Connection...</span>
+                <span class="text-slate-400">Sync Engine Status:</span>
+                <span id="firebase-status-indicator" class="font-bold text-emerald-400">Checking Connection...</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-400">Active User ID:</span>
@@ -408,24 +440,10 @@
                 <span id="firebase-doc-path" class="font-mono text-[10px] text-indigo-300 bg-slate-900 p-1 rounded break-all">/artifacts/ultimate-habit-tracker/users/{userId}/habits/main</span>
               </div>
               <div class="pt-2 flex gap-2">
-                <button onclick="saveHabitsToCloudManually()" class="w-full py-1 text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded border border-indigo-500 transition shadow-sm">
-                  <i data-lucide="upload-cloud" class="w-3 h-3 inline mr-1"></i> Force Push Data to Firestore
+                <button onclick="saveHabitsToCloudManually()" class="w-full py-2 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg border border-indigo-500 transition shadow-sm flex items-center justify-center gap-1.5">
+                  <i data-lucide="upload-cloud" class="w-4 h-4"></i> Force Push Data to Firestore Now
                 </button>
               </div>
-            </div>
-
-            <!-- Rules Reminder Box -->
-            <div class="p-3 bg-indigo-950/30 rounded-lg border border-indigo-800/40 text-[11px] text-slate-300 space-y-1">
-              <span class="font-bold text-indigo-300 block">💡 Firestore Security Rules Requirement:</span>
-              <p class="text-slate-400 leading-normal">Ensure your Firebase Console Firestore Security Rules allow read/write for authenticated users:</p>
-              <pre class="bg-slate-950 p-2 rounded text-[10px] text-emerald-400 font-mono overflow-x-auto mt-1">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}</pre>
             </div>
           </div>
         </div>
@@ -455,7 +473,7 @@ service cloud.firestore {
           </div>
         </div>
 
-        <!-- Reset & Diagnostics -->
+        <!-- Reset & Factory Defaults -->
         <div class="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4 lg:col-span-2">
           <div class="border-b border-slate-800 pb-3">
             <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 text-rose-400">
@@ -544,6 +562,68 @@ service cloud.firestore {
     </div>
   </div>
 
+  <!-- Manage Habits Modal (Single & Bulk Management) -->
+  <div id="manage-habits-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="settings-2" class="w-5 h-5 text-indigo-400"></i> Manage Habits & Bulk Actions
+        </h3>
+        <button onclick="closeManageHabitsModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Mode Selector -->
+      <div class="flex space-x-2 border-b border-slate-800 pb-3">
+        <button onclick="switchManageTab('list')" id="manage-tab-list" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white">List & Edit</button>
+        <button onclick="switchManageTab('bulk-add')" id="manage-tab-bulk-add" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">Bulk Add</button>
+      </div>
+
+      <!-- Tab 1: Habit List & Multi-Delete -->
+      <div id="manage-content-list" class="flex-1 overflow-y-auto space-y-3 pr-1">
+        <div class="flex items-center justify-between text-xs text-slate-400 pb-1">
+          <span>Active Habits (<span id="manage-count">0</span>)</span>
+          <button onclick="bulkDeleteSelected()" class="px-2.5 py-1 text-xs bg-rose-600/20 text-rose-300 border border-rose-500/30 rounded hover:bg-rose-600/30 transition flex items-center gap-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete Selected
+          </button>
+        </div>
+        <div id="manage-habits-list" class="divide-y divide-slate-800 border border-slate-800 rounded-xl bg-slate-950/50">
+          <!-- Loaded via JS -->
+        </div>
+      </div>
+
+      <!-- Tab 2: Bulk Add -->
+      <div id="manage-content-bulk-add" class="hidden flex-1 overflow-y-auto space-y-4">
+        <p class="text-xs text-slate-400">Paste a list of habit names below (one habit per line) to add them all at once.</p>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Habit Names (One per line)</label>
+          <textarea id="bulk-add-names" rows="5" placeholder="Drink 2L Water&#10;Read 15 Pages&#10;Stretch 10 mins" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Default Category</label>
+            <select id="bulk-add-category" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+              <option value="🏃 Exercise">🏃 Exercise</option>
+              <option value="🧹 Chores">🧹 Chores</option>
+              <option value="📚 Study">📚 Study</option>
+              <option value="🧘 Pray / Meditation">🧘 Pray / Meditation</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Weekly Target (Days/Wk)</label>
+            <input type="number" id="bulk-add-target" min="1" max="7" value="5" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+        <button onclick="handleBulkAddSubmit()" class="w-full py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-md shadow-indigo-500/20">Add All Habits</button>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-800">
+        <button onclick="closeManageHabitsModal()" class="px-4 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -567,24 +647,77 @@ service cloud.firestore {
     let auth = null;
     let currentUser = null;
 
+    // Theme Toggle Logic
+    window.toggleTheme = function() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+        localStorage.setItem('habit_tracker_theme', 'light');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('habit_tracker_theme', 'dark');
+      }
+      if (lucide) lucide.createIcons();
+    };
+
+    function loadHabitsFromStorage() {
+      const saved = localStorage.getItem('ultimate_habit_tracker_data');
+      if (saved) {
+        try {
+          habits = JSON.parse(saved);
+        } catch (e) {
+          habits = JSON.parse(JSON.stringify(defaultHabits));
+        }
+      } else {
+        habits = JSON.parse(JSON.stringify(defaultHabits));
+      }
+    }
+
+    function saveHabitsToLocalStorage() {
+      localStorage.setItem('ultimate_habit_tracker_data', JSON.stringify(habits));
+    }
+
+    function updateBadgeUI(text, colorClass) {
+      const badge = document.getElementById('cloud-sync-badge');
+      if (badge) {
+        badge.innerText = text;
+        badge.className = `text-[10px] font-semibold px-2 py-0.5 rounded bg-${colorClass}-500/10 text-${colorClass}-400 border border-${colorClass}-500/20`;
+      }
+    }
+
     async function initCloudSync() {
-      // 1. Get Firebase configuration
       let rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config 
         : typeof window.FIREBASE_CONFIG !== 'undefined' ? JSON.stringify(window.FIREBASE_CONFIG) 
         : localStorage.getItem('firebase_config_json');
 
       const appId = typeof __app_id !== 'undefined' ? __app_id : 'ultimate-habit-tracker';
 
-      if (rawConfig) {
+      const statusInd = document.getElementById('firebase-status-indicator');
+      const userInd = document.getElementById('firebase-user-id');
+      const pathInd = document.getElementById('firebase-doc-path');
+
+      if (!rawConfig) {
+        updateBadgeUI("Local Storage Active", "indigo");
+        if (statusInd) statusInd.innerHTML = "<span class='text-amber-400'>Paste Firebase Config JSON below & click Connect.</span>";
+        if (userInd) userInd.innerText = "Offline Mode";
+        loadHabitsFromStorage();
+        renderGrid();
+        renderDashboard();
+        return;
+      }
+
+      try {
+        const configObj = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
+        const app = initializeApp(configObj);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        const tokenInput = document.getElementById('firebase-config-input');
+        if (tokenInput && !tokenInput.value) tokenInput.value = JSON.stringify(configObj, null, 2);
+
         try {
-          const configObj = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
-          const app = initializeApp(configObj);
-          db = getFirestore(app);
-          auth = getAuth(app);
-
-          const tokenInput = document.getElementById('firebase-config-input');
-          if (tokenInput && !tokenInput.value) tokenInput.value = JSON.stringify(configObj, null, 2);
-
           if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
             const cred = await signInWithCustomToken(auth, __initial_auth_token);
             currentUser = cred.user;
@@ -592,48 +725,42 @@ service cloud.firestore {
             const cred = await signInAnonymously(auth);
             currentUser = cred.user;
           }
-
-          if (currentUser) {
-            updateBadgeUI("Firebase Live Sync", "emerald");
-            const statusInd = document.getElementById('firebase-status-indicator');
-            if (statusInd) statusInd.innerText = "Connected to Firestore";
-            const userInd = document.getElementById('firebase-user-id');
-            if (userInd) userInd.innerText = currentUser.uid;
-
-            setupRealtimeCloudListener(appId, currentUser.uid);
-            return;
+        } catch (authErr) {
+          let fallbackUid = localStorage.getItem('firebase_fallback_uid');
+          if (!fallbackUid) {
+            fallbackUid = 'user_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('firebase_fallback_uid', fallbackUid);
           }
-        } catch (e) {
-          console.warn("Firebase connection notice, using local storage fallback:", e);
-          const statusInd = document.getElementById('firebase-status-indicator');
-          if (statusInd) statusInd.innerText = "Firebase Error: Ensure Firestore Database is created in Console";
+          currentUser = { uid: fallbackUid, isFallback: true };
+          if (statusInd) statusInd.innerHTML = `<span class="text-amber-400">Auth Notice: ${authErr.code || authErr.message} (Using Fallback ID)</span>`;
         }
-      }
 
-      // Local Storage Fallback
-      updateBadgeUI("Local Storage Active", "indigo");
-      const statusInd = document.getElementById('firebase-status-indicator');
-      if (statusInd && !statusInd.innerText.includes('Action Required')) {
-        statusInd.innerText = "Local Storage (Firebase Not Connected)";
-      }
-      const userInd = document.getElementById('firebase-user-id');
-      if (userInd && (!currentUser || !currentUser.uid)) userInd.innerText = "Offline Mode";
+        const userId = currentUser.uid;
+        if (userInd) userInd.innerText = userId + (currentUser.isFallback ? " [Fallback User]" : " [Authenticated]");
+        if (pathInd) pathInd.innerText = `/artifacts/${appId}/users/${userId}/habits/main`;
 
-      loadHabitsFromStorage();
-      renderGrid();
-      renderDashboard();
+        updateBadgeUI("Firebase Cloud Sync", "emerald");
+
+        setupRealtimeCloudListener(appId, userId);
+      } catch (e) {
+        console.error("Firebase Initialization Error:", e);
+        updateBadgeUI("Local Storage Active", "indigo");
+        if (statusInd) statusInd.innerHTML = `<span class="text-rose-400">Config Error: ${e.message}</span>`;
+        loadHabitsFromStorage();
+        renderGrid();
+        renderDashboard();
+      }
     }
 
     function setupRealtimeCloudListener(appId, userId) {
       if (!db || !userId) return;
       const habitsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'habits', 'main');
 
-      const pathInd = document.getElementById('firebase-doc-path');
-      if (pathInd) pathInd.innerText = `/artifacts/${appId}/users/${userId}/habits/main`;
-
       onSnapshot(habitsDocRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
           habits = docSnap.data().items;
+          const statusInd = document.getElementById('firebase-status-indicator');
+          if (statusInd) statusInd.innerHTML = "<span class='text-emerald-400 font-bold'>Connected & Synced with Firestore</span>";
         } else {
           loadHabitsFromStorage();
           saveHabitsToCloud();
@@ -643,7 +770,13 @@ service cloud.firestore {
       }, (error) => {
         console.error("Firestore listener error:", error);
         const statusInd = document.getElementById('firebase-status-indicator');
-        if (statusInd) statusInd.innerText = "Listener Error: " + (error.code || error.message);
+        if (statusInd) {
+          if (error.code === 'permission-denied') {
+            statusInd.innerHTML = `<span class="text-rose-400 font-bold">❌ Permission Denied: Update Security Rules in Firebase Console</span>`;
+          } else {
+            statusInd.innerHTML = `<span class="text-rose-400">Listener Error (${error.code}): ${error.message}</span>`;
+          }
+        }
         loadHabitsFromStorage();
         renderGrid();
         renderDashboard();
@@ -651,17 +784,24 @@ service cloud.firestore {
     }
 
     async function saveHabitsToCloud() {
+      saveHabitsToLocalStorage();
       if (!db || !currentUser) return;
       const appId = typeof __app_id !== 'undefined' ? __app_id : 'ultimate-habit-tracker';
       const habitsDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'habits', 'main');
       try {
         await setDoc(habitsDocRef, { items: habits, lastUpdated: new Date().toISOString() }, { merge: true });
         const statusInd = document.getElementById('firebase-status-indicator');
-        if (statusInd) statusInd.innerText = "Synced to Cloud (" + new Date().toLocaleTimeString() + ")";
+        if (statusInd) statusInd.innerHTML = `<span class="text-emerald-400 font-bold">✅ Data Written to Firestore! (${new Date().toLocaleTimeString()})</span>`;
       } catch (err) {
         console.error("Failed to sync to cloud:", err);
         const statusInd = document.getElementById('firebase-status-indicator');
-        if (statusInd) statusInd.innerText = "Sync Failed: " + (err.code || err.message);
+        if (statusInd) {
+          if (err.code === 'permission-denied') {
+            statusInd.innerHTML = `<span class="text-rose-400 font-bold">❌ Save Blocked: Permission Denied in Firestore Rules</span>`;
+          } else {
+            statusInd.innerHTML = `<span class="text-rose-400 font-bold">❌ Save Failed: ${err.code || err.message}</span>`;
+          }
+        }
         window.showToast("Firestore Save Failed: " + (err.code || err.message), "rose");
       }
     }
@@ -672,136 +812,23 @@ service cloud.firestore {
         return;
       }
       await saveHabitsToCloud();
-      window.showToast("Test save attempt completed!");
+      window.showToast("Attempted write to Firestore!");
     };
 
     window.saveFirebaseConfigFromUI = function() {
       const val = document.getElementById('firebase-config-input').value.trim();
       if (!val) {
-        localStorage.removeItem('firebase_config_json');
-        window.showToast("Firebase configuration cleared", "rose");
-        initCloudSync();
+        window.showToast("Please enter a valid Firebase JSON configuration.", "amber");
         return;
       }
-
       try {
         JSON.parse(val);
         localStorage.setItem('firebase_config_json', val);
-        window.showToast("Firebase configuration saved & initialized!");
+        window.showToast("Firebase Config Saved. Initializing...");
         initCloudSync();
       } catch (e) {
-        window.showToast("Invalid JSON syntax in Firebase Config", "rose");
+        window.showToast("Invalid JSON syntax: " + e.message, "rose");
       }
-    };
-
-    function updateBadgeUI(text, color) {
-      const badge = document.getElementById('cloud-sync-badge');
-      if (!badge) return;
-      badge.innerText = text;
-      if (color === 'emerald') {
-        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-      } else {
-        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
-      }
-    }
-
-    function loadHabitsFromStorage() {
-      const saved = localStorage.getItem('ultimate_habit_tracker_data');
-      if (saved) {
-        try {
-          habits = JSON.parse(saved);
-        } catch(e) {
-          habits = JSON.parse(JSON.stringify(defaultHabits));
-        }
-      } else {
-        habits = JSON.parse(JSON.stringify(defaultHabits));
-      }
-    }
-
-    function saveHabitsToStorage() {
-      localStorage.setItem('ultimate_habit_tracker_data', JSON.stringify(habits));
-      if (db && currentUser) {
-        saveHabitsToCloud();
-      }
-    }
-
-    window.showToast = function(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      const bgColor = type === 'rose' ? 'bg-rose-900/90 border-rose-700 text-rose-200' : 'bg-slate-900 border-indigo-500/50 text-slate-100';
-      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl border ${bgColor} text-xs shadow-xl transition-all duration-300 transform translate-y-2 opacity-0`;
-      toast.innerHTML = `<i data-lucide="${type === 'rose' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 text-indigo-400"></i> ${message}`;
-      container.appendChild(toast);
-      lucide.createIcons();
-
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      });
-
-      setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-2');
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    };
-
-    window.showConfirmModal = function(title, message, onConfirm) {
-      document.getElementById('confirm-modal-title').innerText = title;
-      document.getElementById('confirm-modal-message').innerText = message;
-      document.getElementById('confirm-modal').classList.remove('hidden');
-      confirmCallback = onConfirm;
-    };
-
-    document.getElementById('confirm-modal-cancel').addEventListener('click', () => {
-      document.getElementById('confirm-modal').classList.add('hidden');
-      confirmCallback = null;
-    });
-
-    document.getElementById('confirm-modal-action').addEventListener('click', () => {
-      document.getElementById('confirm-modal').classList.add('hidden');
-      if (confirmCallback) confirmCallback();
-      confirmCallback = null;
-    });
-
-    window.confirmResetData = function() {
-      window.showConfirmModal(
-        "Reset to Sample Habits?",
-        "This will restore the default executive sample habits across your synced session.",
-        () => {
-          habits = JSON.parse(JSON.stringify(defaultHabits));
-          saveHabitsToStorage();
-          renderGrid();
-          renderDashboard();
-          window.showToast("Dataset reset to sample habits!");
-        }
-      );
-    };
-
-    window.confirmClearAllData = function() {
-      window.showConfirmModal(
-        "Clear All Habit Data?",
-        "Are you sure you want to erase ALL habits? This action leaves a completely blank grid.",
-        () => {
-          habits = [];
-          saveHabitsToStorage();
-          renderGrid();
-          renderDashboard();
-          window.showToast("All habit data cleared!", "rose");
-        }
-      );
-    };
-
-    window.deleteHabit = function(habitId) {
-      window.showConfirmModal(
-        "Delete Habit?",
-        "Are you sure you want to permanently delete this habit?",
-        () => {
-          habits = habits.filter(h => h.id !== habitId);
-          saveHabitsToStorage();
-          renderGrid();
-          renderDashboard();
-          window.showToast("Habit deleted");
-        }
-      );
     };
 
     window.switchTab = function(tabId) {
@@ -827,9 +854,22 @@ service cloud.firestore {
       const habit = habits.find(h => h.id === habitId);
       if (habit) {
         habit.checks[dayIdx] = !habit.checks[dayIdx];
-        saveHabitsToStorage();
+        saveHabitsToCloud();
         renderGrid();
       }
+    };
+
+    window.deleteHabit = function(habitId) {
+      const habit = habits.find(h => h.id === habitId);
+      if (!habit) return;
+      
+      showConfirmModal("Delete Habit", `Are you sure you want to delete "${habit.name}"?`, () => {
+        habits = habits.filter(h => h.id !== habitId);
+        saveHabitsToCloud();
+        renderGrid();
+        renderDashboard();
+        window.showToast(`Deleted habit "${habit.name}"`, "amber");
+      });
     };
 
     window.renderGrid = function() {
@@ -837,39 +877,33 @@ service cloud.firestore {
       const tbody = document.getElementById('grid-tbody');
       const dayHeadersRow = document.getElementById('day-headers-row');
       
-      const now = new Date();
-      const currentMonthShort = now.toLocaleDateString('en-US', { month: 'short' });
-      const currentDay = now.getDate();
-
-      const w1 = document.getElementById('week-1-header');
-      const w2 = document.getElementById('week-2-header');
-      const w3 = document.getElementById('week-3-header');
-      const w4 = document.getElementById('week-4-header');
-      if (w1) w1.innerText = `Week 1 (${currentMonthShort} 1 - 7)`;
-      if (w2) w2.innerText = `Week 2 (${currentMonthShort} 8 - 14)`;
-      if (w3) w3.innerText = `Week 3 (${currentMonthShort} 15 - 21)`;
-      if (w4) w4.innerText = `Week 4 (${currentMonthShort} 22 - 28)`;
+      const today = new Date();
+      const currentDayOfMonth = today.getDate();
 
       let dayHeadersHTML = `
         <th class="p-2 sticky left-0 z-10 bg-slate-900 border-r border-slate-800"></th>
         <th class="p-2 sticky left-[130px] z-10 bg-slate-900 border-r border-slate-800"></th>
         <th class="p-2 border-r border-slate-800"></th>
       `;
-
+      
+      const daysOfWeek = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
       for (let d = 1; d <= 28; d++) {
-        const dateObj = new Date(now.getFullYear(), now.getMonth(), d);
-        const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'narrow' });
-        const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
-        const isToday = (currentDay === d);
-
+        const dayLabel = daysOfWeek[(d - 1) % 7];
+        const isToday = (d === currentDayOfMonth);
+        
         dayHeadersHTML += `
-          <th class="p-1 text-center border-r border-slate-800 transition-all ${isToday ? 'bg-indigo-600 text-white font-bold ring-2 ring-indigo-400 rounded-t-md shadow-lg shadow-indigo-500/30' : isWeekend ? 'bg-slate-800/40 text-slate-300' : ''}">
-            <div class="text-[9px] ${isToday ? 'text-indigo-100 font-extrabold uppercase tracking-wider' : 'text-slate-500'}">${isToday ? 'TODAY' : dayLabel}</div>
-            <div class="${isToday ? 'text-xs font-black' : ''}">${d}</div>
+          <th class="p-1 text-center border-r border-slate-800 ${isToday ? 'bg-indigo-600/30 text-indigo-300 font-bold' : ''}">
+            <div class="text-[9px] text-slate-400">${dayLabel}</div>
+            <div class="${isToday ? 'px-1 py-0.5 rounded bg-indigo-600 text-white font-bold text-[10px]' : ''}">${d}</div>
           </th>
         `;
       }
-      dayHeadersHTML += `<th class="p-2 border-r border-slate-800"></th><th class="p-2 border-r border-slate-800"></th><th class="p-2 border-r border-slate-800"></th><th class="p-2"></th>`;
+      dayHeadersHTML += `
+        <th class="p-2 border-r border-slate-800"></th>
+        <th class="p-2 border-r border-slate-800"></th>
+        <th class="p-2 border-r border-slate-800"></th>
+        <th class="p-2 text-center"></th>
+      `;
       dayHeadersRow.innerHTML = dayHeadersHTML;
 
       const filteredHabits = categoryFilter === 'ALL' 
@@ -878,22 +912,11 @@ service cloud.firestore {
 
       tbody.innerHTML = '';
 
-      if (filteredHabits.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="35" class="p-8 text-center text-slate-500">
-              <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-              No habits found. Click "+ Add Habit" above to create your first habit.
-            </td>
-          </tr>
-        `;
-      }
-
       filteredHabits.forEach(habit => {
         const completedCount = habit.checks.filter(Boolean).length;
         const targetMonthly = habit.target * 4;
-        const ratePct = targetMonthly > 0 ? ((completedCount / targetMonthly) * 100).toFixed(1) : "0.0";
-
+        const ratePct = targetMonthly > 0 ? ((completedCount / targetMonthly) * 100).toFixed(1) : 0;
+        
         let badgeClass = 'bg-slate-800 text-slate-300';
         if (habit.category.includes('Exercise')) badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
         else if (habit.category.includes('Chores')) badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
@@ -909,17 +932,13 @@ service cloud.firestore {
 
         let daysCells = '';
         habit.checks.forEach((checked, idx) => {
-          const dayNum = idx + 1;
-          const dateObj = new Date(now.getFullYear(), now.getMonth(), dayNum);
-          const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
-          const isToday = (currentDay === dayNum);
-
+          const isToday = ((idx + 1) === currentDayOfMonth);
           daysCells += `
-            <td class="p-1 text-center border-r border-slate-800 ${isToday ? 'bg-indigo-950/60 ring-1 ring-indigo-500/40' : isWeekend ? 'bg-slate-950/40' : ''}">
+            <td class="p-1 text-center border-r border-slate-800 ${isToday ? 'bg-indigo-950/20' : ''}">
               <input type="checkbox" 
-                     class="custom-checkbox ${isToday ? 'ring-2 ring-indigo-400' : ''}" 
+                     class="custom-checkbox" 
                      ${checked ? 'checked' : ''} 
-                     onchange="window.toggleCheck(${habit.id}, ${idx})">
+                     onchange="toggleCheck(${habit.id}, ${idx})">
             </td>
           `;
         });
@@ -943,8 +962,8 @@ service cloud.firestore {
             </div>
           </td>
           <td class="p-2 text-center">
-            <button onclick="window.deleteHabit(${habit.id})" class="text-slate-500 hover:text-rose-400 transition" title="Delete habit">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <button onclick="deleteHabit(${habit.id})" class="p-1 text-slate-500 hover:text-rose-400 transition" title="Delete Habit">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </td>
         `;
@@ -953,7 +972,7 @@ service cloud.firestore {
       });
 
       renderDailyRollups();
-      lucide.createIcons();
+      if (lucide) lucide.createIcons();
     };
 
     function renderDailyRollups() {
@@ -965,9 +984,7 @@ service cloud.firestore {
       while (rateRow.children.length > 3) rateRow.removeChild(rateRow.lastChild);
       while (statusRow.children.length > 3) statusRow.removeChild(statusRow.lastChild);
 
-      const totalHabitsCount = habits.length || 1;
-      const now = new Date();
-      const currentDay = now.getDate();
+      const totalHabitsCount = habits.length;
 
       for (let day = 0; day < 28; day++) {
         let dayDone = 0;
@@ -975,27 +992,26 @@ service cloud.firestore {
           if (h.checks[day]) dayDone++;
         });
 
-        const dayRate = habits.length > 0 ? ((dayDone / totalHabitsCount) * 100).toFixed(0) : 0;
-        const isToday = (currentDay === (day + 1));
+        const dayRate = totalHabitsCount > 0 ? ((dayDone / totalHabitsCount) * 100).toFixed(0) : 0;
 
         const tdCount = document.createElement('td');
-        tdCount.className = `p-1 text-center font-bold text-indigo-300 border-r border-slate-800 ${isToday ? 'bg-indigo-950/60' : ''}`;
+        tdCount.className = "p-1 text-center font-bold text-indigo-300 border-r border-slate-800";
         tdCount.innerText = dayDone;
         countRow.appendChild(tdCount);
 
         const tdRate = document.createElement('td');
-        tdRate.className = `p-1 text-center text-[11px] text-slate-300 border-r border-slate-800 ${isToday ? 'bg-indigo-950/60 font-bold' : ''}`;
+        tdRate.className = "p-1 text-center text-[11px] text-slate-300 border-r border-slate-800";
         tdRate.innerText = `${dayRate}%`;
         rateRow.appendChild(tdRate);
 
         const tdStatus = document.createElement('td');
-        tdStatus.className = `p-1 text-center border-r border-slate-800 ${isToday ? 'bg-indigo-950/60' : ''}`;
+        tdStatus.className = "p-1 text-center border-r border-slate-800";
         if (dayRate >= 80) {
-          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" title="≥80% High"></span>`;
+          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" title="≥80% High Consistency"></span>`;
         } else if (dayRate >= 50) {
-          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" title="50-79% Medium"></span>`;
+          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" title="50-79% Medium Consistency"></span>`;
         } else {
-          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500" title="<50% Low"></span>`;
+          tdStatus.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500" title="<50% Low Consistency"></span>`;
         }
         statusRow.appendChild(tdStatus);
       }
@@ -1007,9 +1023,10 @@ service cloud.firestore {
       }
     }
 
-    window.renderDashboard = function() {
+    function renderDashboard() {
       let totalPossible = 0;
       let totalCompleted = 0;
+      let streakDays = 0;
 
       habits.forEach(h => {
         const hTarget = h.target * 4;
@@ -1018,19 +1035,24 @@ service cloud.firestore {
         totalCompleted += hDone;
       });
 
-      const overallRate = totalPossible > 0 ? ((totalCompleted / totalPossible) * 100).toFixed(1) : "0.0";
-      document.getElementById('kpi-total-habits').innerText = habits.length;
-      document.getElementById('kpi-completion-rate').innerText = `${overallRate}%`;
-      document.getElementById('kpi-completion-bar').style.width = `${overallRate}%`;
-
-      let highDays = 0;
       for (let day = 0; day < 28; day++) {
         let dayDone = 0;
         habits.forEach(h => { if (h.checks[day]) dayDone++; });
         const rate = habits.length > 0 ? (dayDone / habits.length) : 0;
-        if (rate >= 0.8 && habits.length > 0) highDays++;
+        if (rate >= 0.8) streakDays++;
       }
-      document.getElementById('kpi-current-streak').innerText = `${highDays} Days`;
+
+      const overallRate = totalPossible > 0 ? ((totalCompleted / totalPossible) * 100).toFixed(1) : 0;
+      
+      const totalEl = document.getElementById('kpi-total-habits');
+      const rateEl = document.getElementById('kpi-completion-rate');
+      const barEl = document.getElementById('kpi-completion-bar');
+      const streakEl = document.getElementById('kpi-current-streak');
+
+      if (totalEl) totalEl.innerText = habits.length;
+      if (rateEl) rateEl.innerText = `${overallRate}%`;
+      if (barEl) barEl.style.width = `${overallRate}%`;
+      if (streakEl) streakEl.innerText = `${streakDays} Days`;
 
       const categories = [
         { name: "🏃 Exercise", bg: "bg-emerald-500", text: "text-emerald-400" },
@@ -1040,7 +1062,7 @@ service cloud.firestore {
       ];
 
       const catContainer = document.getElementById('category-breakdown-container');
-      catContainer.innerHTML = '';
+      if (catContainer) catContainer.innerHTML = '';
 
       let topCat = { name: 'N/A', rate: 0 };
 
@@ -1055,25 +1077,29 @@ service cloud.firestore {
         });
 
         const cRate = cTarget > 0 ? ((cDone / cTarget) * 100).toFixed(1) : 0;
-        if (parseFloat(cRate) >= topCat.rate && cTarget > 0) {
+        if (parseFloat(cRate) > topCat.rate) {
           topCat = { name: cat.name, rate: parseFloat(cRate) };
         }
 
-        catContainer.innerHTML += `
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-semibold text-slate-200">${cat.name}</span>
-              <span class="font-mono font-bold ${cat.text}">${cRate}% (${cDone}/${cTarget})</span>
+        if (catContainer) {
+          catContainer.innerHTML += `
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-200">${cat.name}</span>
+                <span class="font-mono font-bold ${cat.text}">${cRate}% (${cDone}/${cTarget})</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="${cat.bg} h-full rounded-full transition-all" style="width: ${cRate}%"></div>
+              </div>
             </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div class="${cat.bg} h-full rounded-full transition-all" style="width: ${cRate}%"></div>
-            </div>
-          </div>
-        `;
+          `;
+        }
       });
 
-      document.getElementById('kpi-top-category').innerText = topCat.name;
-      document.getElementById('kpi-top-category-pct').innerText = `${topCat.rate}%`;
+      const topCatEl = document.getElementById('kpi-top-category');
+      const topCatPctEl = document.getElementById('kpi-top-category-pct');
+      if (topCatEl) topCatEl.innerText = topCat.name;
+      if (topCatPctEl) topCatPctEl.innerText = `${topCat.rate}%`;
 
       const habitPerformance = habits.map(h => {
         const done = h.checks.filter(Boolean).length;
@@ -1088,40 +1114,44 @@ service cloud.firestore {
       const bottom3 = [...habitPerformance].reverse().slice(0, 3);
 
       const topContainer = document.getElementById('top-performers-container');
-      topContainer.innerHTML = top3.length > 0 ? top3.map(h => `
-        <div class="py-2.5 flex items-center justify-between text-xs">
-          <div>
-            <div class="font-bold text-slate-200">${h.name}</div>
-            <div class="text-[10px] text-slate-500">${h.category}</div>
+      if (topContainer) {
+        topContainer.innerHTML = top3.map(h => `
+          <div class="py-2.5 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-200">${h.name}</div>
+              <div class="text-[10px] text-slate-500">${h.category}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-bold text-emerald-400">${h.rate}%</div>
+              <div class="text-[10px] text-slate-500">${h.done}/${h.target} days</div>
+            </div>
           </div>
-          <div class="text-right">
-            <div class="font-mono font-bold text-emerald-400">${h.rate}%</div>
-            <div class="text-[10px] text-slate-500">${h.done}/${h.target} days</div>
-          </div>
-        </div>
-      `).join('') : '<p class="text-xs text-slate-500 py-2">No habits configured.</p>';
+        `).join('');
+      }
 
       const bottomContainer = document.getElementById('bottom-performers-container');
-      bottomContainer.innerHTML = bottom3.length > 0 ? bottom3.map(h => `
-        <div class="py-2.5 flex items-center justify-between text-xs">
-          <div>
-            <div class="font-bold text-slate-200">${h.name}</div>
-            <div class="text-[10px] text-slate-500">${h.category}</div>
+      if (bottomContainer) {
+        bottomContainer.innerHTML = bottom3.map(h => `
+          <div class="py-2.5 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-slate-200">${h.name}</div>
+              <div class="text-[10px] text-slate-500">${h.category}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-bold text-amber-400">${h.rate}%</div>
+              <div class="text-[10px] text-slate-500">${h.done}/${h.target} days</div>
+            </div>
           </div>
-          <div class="text-right">
-            <div class="font-mono font-bold text-amber-400">${h.rate}%</div>
-            <div class="text-[10px] text-slate-500">${h.done}/${h.target} days</div>
-          </div>
-        </div>
-      `).join('') : '<p class="text-xs text-slate-500 py-2">No habits configured.</p>';
+        `).join('');
+      }
 
       renderWeeklyChart();
-    };
+    }
 
     function renderWeeklyChart() {
-      const canvas = document.getElementById('weeklyTrendChart');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
+      const chartEl = document.getElementById('weeklyTrendChart');
+      if (!chartEl) return;
+      const ctx = chartEl.getContext('2d');
 
       const weekRates = [1, 2, 3, 4].map(wNum => {
         const startDay = (wNum - 1) * 7;
@@ -1149,14 +1179,14 @@ service cloud.firestore {
           labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
           datasets: [
             {
-              label: 'Actual Rate (%)',
+              label: 'Actual Completion Rate (%)',
               data: weekRates,
               backgroundColor: '#4F46E5',
               borderRadius: 6,
               barThickness: 28,
             },
             {
-              label: 'Benchmark (80%)',
+              label: 'Consistency Benchmark (80%)',
               data: [80, 80, 80, 80],
               type: 'line',
               borderColor: '#64748B',
@@ -1172,20 +1202,31 @@ service cloud.firestore {
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            y: {
-              min: 0,
-              max: 100,
-              grid: { color: '#1E293B' },
-              ticks: { color: '#94A3B8', callback: v => v + '%' }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { color: '#94A3B8' }
-            }
+            y: { min: 0, max: 100, grid: { color: '#1E293B' }, ticks: { color: '#94A3B8', callback: v => v + '%' } },
+            x: { grid: { display: false }, ticks: { color: '#94A3B8' } }
           }
         }
       });
     }
+
+    /* Modal Dialogs and UI Helpers */
+    function showConfirmModal(title, message, callback) {
+      document.getElementById('confirm-modal-title').innerText = title;
+      document.getElementById('confirm-modal-message').innerText = message;
+      confirmCallback = callback;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('confirm-modal-cancel').onclick = function() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    };
+
+    document.getElementById('confirm-modal-action').onclick = function() {
+      if (confirmCallback) confirmCallback();
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    };
 
     window.openAddHabitModal = function() {
       document.getElementById('add-habit-modal').classList.remove('hidden');
@@ -1212,23 +1253,186 @@ service cloud.firestore {
       };
 
       habits.push(newHabit);
-      saveHabitsToStorage();
-      window.closeAddHabitModal();
+      saveHabitsToCloud();
+      renderGrid();
+      renderDashboard();
+      closeAddHabitModal();
       document.getElementById('modal-habit-name').value = '';
-      window.renderGrid();
-      window.renderDashboard();
-      window.showToast("New habit added successfully!");
+      window.showToast(`Habit "${name}" added successfully!`);
+    };
+
+    /* Manage Habits Modal Logic */
+    let selectedHabitIds = new Set();
+
+    window.openManageHabitsModal = function() {
+      selectedHabitIds.clear();
+      renderManageHabitsList();
+      document.getElementById('manage-habits-modal').classList.remove('hidden');
+    };
+
+    window.closeManageHabitsModal = function() {
+      document.getElementById('manage-habits-modal').classList.add('hidden');
+    };
+
+    window.switchManageTab = function(tabName) {
+      if (tabName === 'list') {
+        document.getElementById('manage-content-list').classList.remove('hidden');
+        document.getElementById('manage-content-bulk-add').classList.add('hidden');
+        document.getElementById('manage-tab-list').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+        document.getElementById('manage-tab-bulk-add').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+        renderManageHabitsList();
+      } else {
+        document.getElementById('manage-content-list').classList.add('hidden');
+        document.getElementById('manage-content-bulk-add').classList.remove('hidden');
+        document.getElementById('manage-tab-list').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+        document.getElementById('manage-tab-bulk-add').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+      }
+    };
+
+    function renderManageHabitsList() {
+      const container = document.getElementById('manage-habits-list');
+      document.getElementById('manage-count').innerText = habits.length;
+      container.innerHTML = '';
+
+      if (habits.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-500 text-xs">No habits configured.</div>`;
+        return;
+      }
+
+      habits.forEach(h => {
+        const div = document.createElement('div');
+        div.className = "p-3 flex items-center justify-between gap-3 hover:bg-slate-900/60 transition";
+        div.innerHTML = `
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <input type="checkbox" class="custom-checkbox" ${selectedHabitIds.has(h.id) ? 'checked' : ''} onchange="toggleSelectHabit(${h.id})">
+            <div class="min-w-0 flex-1">
+              <input type="text" value="${h.name}" onchange="updateHabitInline(${h.id}, 'name', this.value)" class="bg-transparent border-b border-transparent hover:border-slate-700 focus:border-indigo-500 text-xs font-bold text-white w-full focus:outline-none px-1">
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-[10px] text-slate-400">${h.category}</span>
+                <span class="text-[10px] text-slate-500">• ${h.target} days/wk</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="deleteHabit(${h.id}); renderManageHabitsList();" class="p-1.5 text-slate-500 hover:text-rose-400 transition" title="Delete Habit">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+
+      if (lucide) lucide.createIcons();
+    }
+
+    window.toggleSelectHabit = function(id) {
+      if (selectedHabitIds.has(id)) selectedHabitIds.delete(id);
+      else selectedHabitIds.add(id);
+    };
+
+    window.updateHabitInline = function(id, key, val) {
+      const h = habits.find(item => item.id === id);
+      if (h) {
+        h[key] = val;
+        saveHabitsToCloud();
+        renderGrid();
+        renderDashboard();
+      }
+    };
+
+    window.bulkDeleteSelected = function() {
+      if (selectedHabitIds.size === 0) {
+        window.showToast("No habits selected for deletion.", "amber");
+        return;
+      }
+      showConfirmModal("Bulk Delete", `Delete ${selectedHabitIds.size} selected habit(s)?`, () => {
+        habits = habits.filter(h => !selectedHabitIds.has(h.id));
+        selectedHabitIds.clear();
+        saveHabitsToCloud();
+        renderGrid();
+        renderDashboard();
+        renderManageHabitsList();
+        window.showToast("Selected habits deleted!");
+      });
+    };
+
+    window.handleBulkAddSubmit = function() {
+      const rawText = document.getElementById('bulk-add-names').value.trim();
+      const category = document.getElementById('bulk-add-category').value;
+      const target = parseInt(document.getElementById('bulk-add-target').value, 10) || 5;
+
+      if (!rawText) {
+        window.showToast("Please enter at least one habit name.", "amber");
+        return;
+      }
+
+      const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+      lines.forEach((line, idx) => {
+        habits.push({
+          id: Date.now() + idx,
+          category,
+          name: line,
+          target,
+          checks: new Array(28).fill(false)
+        });
+      });
+
+      saveHabitsToCloud();
+      renderGrid();
+      renderDashboard();
+      document.getElementById('bulk-add-names').value = '';
+      switchManageTab('list');
+      window.showToast(`Added ${lines.length} new habits!`);
+    };
+
+    window.showToast = function(msg, type = "indigo") {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-xl text-xs font-semibold text-white shadow-xl border backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${
+        type === "rose" ? "bg-rose-900/90 border-rose-500" :
+        type === "amber" ? "bg-amber-900/90 border-amber-500" :
+        "bg-indigo-900/90 border-indigo-500"
+      }`;
+      toast.innerHTML = `<i data-lucide="info" class="w-4 h-4"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      if (lucide) lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    };
+
+    window.confirmResetData = function() {
+      showConfirmModal("Reset to Sample Data", "Restore default sample habits? Your current state will be overwritten.", () => {
+        habits = JSON.parse(JSON.stringify(defaultHabits));
+        saveHabitsToCloud();
+        renderGrid();
+        renderDashboard();
+        window.showToast("Restored factory sample data!");
+      });
+    };
+
+    window.confirmClearAllData = function() {
+      showConfirmModal("Clear All Data", "Are you sure you want to delete ALL habits? This action cannot be undone.", () => {
+        habits = [];
+        saveHabitsToCloud();
+        renderGrid();
+        renderDashboard();
+        window.showToast("All habits cleared!", "amber");
+      });
     };
 
     window.exportDataJSON = function() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(habits, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", "habit_tracker_backup.json");
+      downloadAnchor.setAttribute("download", `habits_backup_${new Date().toISOString().slice(0,10)}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      window.showToast("Backup exported to JSON!");
     };
 
     window.importDataJSON = function(event) {
@@ -1237,49 +1441,42 @@ service cloud.firestore {
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
-          const parsed = JSON.parse(e.target.result);
-          if (Array.isArray(parsed)) {
-            habits = parsed;
-            saveHabitsToStorage();
-            window.renderGrid();
-            window.renderDashboard();
-            window.showToast("Habit dataset successfully imported!");
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            habits = imported;
+            saveHabitsToCloud();
+            renderGrid();
+            renderDashboard();
+            window.showToast("Backup dataset imported successfully!");
+          } else {
+            window.showToast("Invalid JSON backup structure.", "rose");
           }
-        } catch(err) {
-          window.showToast("Invalid JSON backup file format", "rose");
+        } catch (err) {
+          window.showToast("Failed to parse JSON file.", "rose");
         }
       };
       reader.readAsText(file);
     };
 
     window.exportCSV = function() {
-      let csvContent = "data:text/csv;charset=utf-8,Category,Habit Name,Target/Wk," + Array.from({length: 28}, (_, i) => `Day ${i+1}`).join(",") + ",Total Completed,Completion Rate %\n";
+      let csv = "Category,Habit Name,Target Frequency,Completed Days (Out of 28),Completion Rate (%)\n";
       habits.forEach(h => {
-        const completed = h.checks.filter(Boolean).length;
-        const rate = ((completed / (h.target * 4)) * 100).toFixed(1);
-        const row = [
-          `"${h.category}"`,
-          `"${h.name}"`,
-          h.target,
-          ...h.checks.map(c => c ? 1 : 0),
-          completed,
-          `"${rate}%"`
-        ].join(",");
-        csvContent += row + "\n";
+        const done = h.checks.filter(Boolean).length;
+        const rate = h.target > 0 ? ((done / (h.target * 4)) * 100).toFixed(1) : 0;
+        csv += `"${h.category}","${h.name}",${h.target},${done},${rate}%\n`;
       });
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "habit_tracker_report.csv");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.showToast("Report exported to CSV!");
+      const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `habits_report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
     };
 
     document.addEventListener('DOMContentLoaded', () => {
       initCloudSync();
-      lucide.createIcons();
+      if (lucide) lucide.createIcons();
     });
   </script>
 </body>
