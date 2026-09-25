@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ultimate Habit Tracker v3.0 | Executive Dashboard</title>
+  <title>Ultimate Habit Tracker | Multi-User Edition</title>
 
   <!-- Anti-Flicker Theme Script -->
   <script>
@@ -141,9 +141,9 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            ULTIMATE HABIT TRACKER <span id="cloud-sync-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Initializing Sync...</span>
+            ULTIMATE HABIT TRACKER <span id="cloud-sync-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Authenticating...</span>
           </h1>
-          <p class="text-xs text-slate-400">Production Ready • Executive Analytics • Firebase Cloud Sync</p>
+          <p class="text-xs text-slate-400">Multi-User Cloud Sync • Executive Analytics • Firebase Auth</p>
         </div>
       </div>
 
@@ -164,8 +164,14 @@
       </nav>
 
       <div class="flex items-center space-x-2">
+        <!-- User Profile / Auth Button -->
+        <button id="user-auth-btn" onclick="openAuthModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-500/30 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
+          <span id="header-user-label">Sign In</span>
+        </button>
+
         <button onclick="openManageHabitsModal()" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition flex items-center gap-1.5 shadow-sm">
-          <i data-lucide="settings-2" class="w-4 h-4 text-indigo-400"></i> Manage Habits
+          <i data-lucide="settings-2" class="w-4 h-4 text-indigo-400"></i> Manage
         </button>
         <button onclick="openAddHabitModal()" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-indigo-500/30">
           <i data-lucide="plus" class="w-4 h-4"></i> Add Habit
@@ -377,7 +383,7 @@
             <tfoot class="bg-slate-950 border-t-2 border-slate-700 font-mono text-xs">
               <tr id="rollup-count-row" class="hover:bg-slate-900/50">
                 <td colspan="2" class="p-2.5 font-sans font-bold text-slate-300 sticky left-0 z-10 bg-slate-950 border-r border-slate-800 text-right">
-                  Daily Completed Count
+                  Daily Completed Count (=COUNTIF)
                 </td>
                 <td class="p-2 text-center text-slate-500 border-r border-slate-800" id="rollup-target-sum">-</td>
               </tr>
@@ -413,7 +419,7 @@
               <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                 <i data-lucide="cloud" class="w-4 h-4 text-emerald-400"></i> Firebase Cloud Sync Diagnostics
               </h2>
-              <p class="text-xs text-slate-400">Real-time cross-device cloud persistence</p>
+              <p class="text-xs text-slate-400">Real-time cross-device multi-user cloud persistence</p>
             </div>
           </div>
 
@@ -431,12 +437,12 @@
                 <span class="text-slate-400">Sync Engine Status:</span>
                 <span id="firebase-status-indicator" class="font-bold text-emerald-400">Checking Connection...</span>
               </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-400">Active User ID:</span>
-                <span id="firebase-user-id" class="font-mono text-slate-400">Not authenticated</span>
+              <div class="flex flex-col gap-0.5 pt-1 border-t border-slate-800/80">
+                <span class="text-slate-400 text-[11px]">Active Firebase User ID (UID):</span>
+                <span id="firebase-user-id" class="font-mono text-xs text-emerald-400 bg-slate-900 p-1.5 rounded break-all select-all">Not authenticated</span>
               </div>
               <div class="flex flex-col gap-0.5 pt-1 border-t border-slate-800/80">
-                <span class="text-slate-400 text-[11px]">Exact Firestore Console Path:</span>
+                <span class="text-slate-400 text-[11px]">Exact Firestore Document Path:</span>
                 <span id="firebase-doc-path" class="font-mono text-[10px] text-indigo-300 bg-slate-900 p-1 rounded break-all">/artifacts/ultimate-habit-tracker/users/{userId}/habits/main</span>
               </div>
               <div class="pt-2 flex gap-2">
@@ -483,7 +489,7 @@
           </div>
 
           <p class="text-xs text-slate-400">
-            Your data is stored locally in your browser and synced in real-time to your Firebase cloud datastore when connected.
+            Your data is isolated to your individual account and synced in real-time to your Firebase cloud datastore when connected.
           </p>
 
           <div class="flex flex-wrap gap-3">
@@ -500,6 +506,87 @@
     </div>
 
   </main>
+
+  <!-- ==================== MODAL 1: AUTH & MULTI-USER LOGIN ==================== -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2" id="auth-modal-title">
+          <i data-lucide="user-check" class="w-5 h-5 text-indigo-400"></i> Firebase User Authentication
+        </h3>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Auth Tab Selector -->
+      <div class="flex space-x-2 border-b border-slate-800 pb-3">
+        <button onclick="switchAuthTab('signin')" id="auth-tab-signin" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white">Sign In</button>
+        <button onclick="switchAuthTab('register')" id="auth-tab-register" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">Create Account</button>
+        <button onclick="switchAuthTab('guest')" id="auth-tab-guest" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">Guest Mode</button>
+      </div>
+
+      <!-- User Active Status Card (Shown if logged in) -->
+      <div id="auth-current-user-card" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-full bg-indigo-600/30 text-indigo-300 font-bold flex items-center justify-center text-sm border border-indigo-500/30" id="user-card-avatar">
+            U
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-white truncate" id="user-card-email">user@example.com</p>
+            <p class="text-[10px] text-slate-400 truncate font-mono">UID: <span id="user-card-uid" class="select-all">...</span></p>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-800 flex justify-end">
+          <button onclick="handleSignOut()" class="px-3 py-1.5 text-xs font-semibold bg-rose-600/20 text-rose-300 border border-rose-500/30 rounded-lg hover:bg-rose-600/30 transition flex items-center gap-1.5">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content: Sign In -->
+      <form id="auth-form-signin" onsubmit="handleEmailSignIn(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+          <input type="email" id="signin-email" required placeholder="name@company.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+          <input type="password" id="signin-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+        <button type="submit" class="w-full py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow-md shadow-indigo-500/20">Sign In to Account</button>
+      </form>
+
+      <!-- Tab Content: Register -->
+      <form id="auth-form-register" onsubmit="handleEmailSignUp(event)" class="hidden space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name / Display Name</label>
+          <input type="text" id="register-name" required placeholder="John Doe" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+          <input type="email" id="register-email" required placeholder="name@company.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Password (Min 6 characters)</label>
+          <input type="password" id="register-password" minlength="6" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+        </div>
+        <button type="submit" class="w-full py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shadow-md shadow-emerald-500/20">Create Multi-User Account</button>
+      </form>
+
+      <!-- Tab Content: Guest Mode -->
+      <div id="auth-form-guest" class="hidden space-y-4">
+        <p class="text-xs text-slate-400">Continue as an anonymous user. Your habit data will be synced under a random Firebase Guest UID.</p>
+        <button onclick="handleGuestSignIn()" class="w-full py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition shadow-sm flex items-center justify-center gap-2">
+          <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i> Continue as Guest / Anonymous User
+        </button>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-800">
+        <button onclick="closeAuthModal()" class="px-4 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Custom Confirmation Modal -->
   <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -624,10 +711,25 @@
     </div>
   </div>
 
+  <!-- JAVASCRIPT ES MODULE FOR MULTI-USER FIREBASE AUTH & FIRESTORE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { 
+      getAuth, 
+      signInAnonymously, 
+      signInWithCustomToken, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged,
+      updateProfile
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const defaultHabits = [
       { id: 1, category: "🏃 Exercise", name: "Morning 5k Run / Cardio", target: 5, checks: [true, true, true, false, true, true, false,  true, true, true, true, false, true, false,  true, true, true, true, true, false, false,  true, true, true, false, true, true, true] },
@@ -646,8 +748,8 @@
     let db = null;
     let auth = null;
     let currentUser = null;
+    let unsubscribeSnapshot = null;
 
-    // Theme Toggle Logic
     window.toggleTheme = function() {
       const isDark = document.documentElement.classList.contains('dark');
       if (isDark) {
@@ -699,8 +801,8 @@
       const pathInd = document.getElementById('firebase-doc-path');
 
       if (!rawConfig) {
-        updateBadgeUI("Local Storage Active", "indigo");
-        if (statusInd) statusInd.innerHTML = "<span class='text-amber-400'>Paste Firebase Config JSON below & click Connect.</span>";
+        updateBadgeUI("Local Storage Mode", "indigo");
+        if (statusInd) statusInd.innerHTML = "<span class='text-amber-400'>Paste Firebase Config JSON in Settings to enable Cloud.</span>";
         if (userInd) userInd.innerText = "Offline Mode";
         loadHabitsFromStorage();
         renderGrid();
@@ -717,34 +819,48 @@
         const tokenInput = document.getElementById('firebase-config-input');
         if (tokenInput && !tokenInput.value) tokenInput.value = JSON.stringify(configObj, null, 2);
 
-        try {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            const cred = await signInWithCustomToken(auth, __initial_auth_token);
-            currentUser = cred.user;
+        // Listen for Firebase Auth State Changes
+        onAuthStateChanged(auth, async (user) => {
+          if (unsubscribeSnapshot) {
+            unsubscribeSnapshot();
+            unsubscribeSnapshot = null;
+          }
+
+          if (user) {
+            currentUser = user;
+            updateUserUI(user);
+            updateBadgeUI("Firebase Cloud Active", "emerald");
+
+            const userId = user.uid;
+            if (userInd) userInd.innerText = userId;
+            if (pathInd) pathInd.innerText = `/artifacts/${appId}/users/${userId}/habits/main`;
+
+            setupRealtimeCloudListener(appId, userId);
           } else {
-            const cred = await signInAnonymously(auth);
-            currentUser = cred.user;
+            // Auto Sign In Anonymously or Custom Token if available
+            try {
+              if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+              } else {
+                await signInAnonymously(auth);
+              }
+            } catch (authErr) {
+              console.warn("Auto-Auth Notice:", authErr);
+              let fallbackUid = localStorage.getItem('firebase_fallback_uid');
+              if (!fallbackUid) {
+                fallbackUid = 'user_' + Math.random().toString(36).substring(2, 9);
+                localStorage.setItem('firebase_fallback_uid', fallbackUid);
+              }
+              currentUser = { uid: fallbackUid, isAnonymous: true };
+              updateUserUI(currentUser);
+              setupRealtimeCloudListener(appId, fallbackUid);
+            }
           }
-        } catch (authErr) {
-          let fallbackUid = localStorage.getItem('firebase_fallback_uid');
-          if (!fallbackUid) {
-            fallbackUid = 'user_' + Math.random().toString(36).substring(2, 9);
-            localStorage.setItem('firebase_fallback_uid', fallbackUid);
-          }
-          currentUser = { uid: fallbackUid, isFallback: true };
-          if (statusInd) statusInd.innerHTML = `<span class="text-amber-400">Auth Notice: ${authErr.code || authErr.message} (Using Fallback ID)</span>`;
-        }
+        });
 
-        const userId = currentUser.uid;
-        if (userInd) userInd.innerText = userId + (currentUser.isFallback ? " [Fallback User]" : " [Authenticated]");
-        if (pathInd) pathInd.innerText = `/artifacts/${appId}/users/${userId}/habits/main`;
-
-        updateBadgeUI("Firebase Cloud Sync", "emerald");
-
-        setupRealtimeCloudListener(appId, userId);
       } catch (e) {
         console.error("Firebase Initialization Error:", e);
-        updateBadgeUI("Local Storage Active", "indigo");
+        updateBadgeUI("Local Storage Mode", "indigo");
         if (statusInd) statusInd.innerHTML = `<span class="text-rose-400">Config Error: ${e.message}</span>`;
         loadHabitsFromStorage();
         renderGrid();
@@ -752,11 +868,31 @@
       }
     }
 
+    function updateUserUI(user) {
+      const headerLabel = document.getElementById('header-user-label');
+      const cardEmail = document.getElementById('user-card-email');
+      const cardUid = document.getElementById('user-card-uid');
+      const cardAvatar = document.getElementById('user-card-avatar');
+      const currentUserCard = document.getElementById('auth-current-user-card');
+
+      if (user) {
+        const displayName = user.displayName || user.email || (user.isAnonymous ? "Guest User" : "User");
+        if (headerLabel) headerLabel.innerText = displayName;
+        if (cardEmail) cardEmail.innerText = user.email ? user.email : (user.isAnonymous ? "Guest User (Anonymous)" : displayName);
+        if (cardUid) cardUid.innerText = user.uid;
+        if (cardAvatar) cardAvatar.innerText = displayName.charAt(0).toUpperCase();
+        if (currentUserCard) currentUserCard.classList.remove('hidden');
+      } else {
+        if (headerLabel) headerLabel.innerText = "Sign In";
+        if (currentUserCard) currentUserCard.classList.add('hidden');
+      }
+    }
+
     function setupRealtimeCloudListener(appId, userId) {
       if (!db || !userId) return;
       const habitsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'habits', 'main');
 
-      onSnapshot(habitsDocRef, (docSnap) => {
+      unsubscribeSnapshot = onSnapshot(habitsDocRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
           habits = docSnap.data().items;
           const statusInd = document.getElementById('firebase-status-indicator');
@@ -805,6 +941,99 @@
         window.showToast("Firestore Save Failed: " + (err.code || err.message), "rose");
       }
     }
+
+    window.openAuthModal = function() {
+      document.getElementById('auth-modal').classList.remove('hidden');
+    };
+
+    window.closeAuthModal = function() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    };
+
+    window.switchAuthTab = function(tabName) {
+      document.getElementById('auth-form-signin').classList.add('hidden');
+      document.getElementById('auth-form-register').classList.add('hidden');
+      document.getElementById('auth-form-guest').classList.add('hidden');
+
+      document.getElementById('auth-tab-signin').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+      document.getElementById('auth-tab-register').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+      document.getElementById('auth-tab-guest').className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+
+      if (tabName === 'signin') {
+        document.getElementById('auth-form-signin').classList.remove('hidden');
+        document.getElementById('auth-tab-signin').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+      } else if (tabName === 'register') {
+        document.getElementById('auth-form-register').classList.remove('hidden');
+        document.getElementById('auth-tab-register').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white";
+      } else {
+        document.getElementById('auth-form-guest').classList.remove('hidden');
+        document.getElementById('auth-tab-guest').className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+      }
+    };
+
+    window.handleEmailSignIn = async function(e) {
+      e.preventDefault();
+      if (!auth) {
+        window.showToast("Firebase Auth is not initialized. Check config.", "amber");
+        return;
+      }
+      const email = document.getElementById('signin-email').value.trim();
+      const password = document.getElementById('signin-password').value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.showToast(`Signed in as ${email}`);
+        closeAuthModal();
+      } catch (err) {
+        window.showToast("Sign In Error: " + (err.code || err.message), "rose");
+      }
+    };
+
+    window.handleEmailSignUp = async function(e) {
+      e.preventDefault();
+      if (!auth) {
+        window.showToast("Firebase Auth is not initialized. Check config.", "amber");
+        return;
+      }
+      const name = document.getElementById('register-name').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        if (name && cred.user) {
+          await updateProfile(cred.user, { displayName: name });
+        }
+        window.showToast(`Account created for ${email}`);
+        closeAuthModal();
+      } catch (err) {
+        window.showToast("Registration Error: " + (err.code || err.message), "rose");
+      }
+    };
+
+    window.handleGuestSignIn = async function() {
+      if (!auth) {
+        window.showToast("Firebase Auth is not initialized.", "amber");
+        return;
+      }
+      try {
+        await signInAnonymously(auth);
+        window.showToast("Signed in as Guest");
+        closeAuthModal();
+      } catch (err) {
+        window.showToast("Guest Sign In Error: " + (err.code || err.message), "rose");
+      }
+    };
+
+    window.handleSignOut = async function() {
+      if (auth) {
+        await signOut(auth);
+        habits = [];
+        renderGrid();
+        renderDashboard();
+        window.showToast("Signed out successfully", "amber");
+      }
+    };
 
     window.saveHabitsToCloudManually = async function() {
       if (!db || !currentUser) {
@@ -1209,7 +1438,6 @@
       });
     }
 
-    /* Modal Dialogs and UI Helpers */
     function showConfirmModal(title, message, callback) {
       document.getElementById('confirm-modal-title').innerText = title;
       document.getElementById('confirm-modal-message').innerText = message;
@@ -1261,7 +1489,6 @@
       window.showToast(`Habit "${name}" added successfully!`);
     };
 
-    /* Manage Habits Modal Logic */
     let selectedHabitIds = new Set();
 
     window.openManageHabitsModal = function() {
